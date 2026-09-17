@@ -1,0 +1,29 @@
+# Claude temporary/local state
+.claude/scheduled_tasks.lock
+
+# Backups and generated outputs
+migration-backups/
+outputs/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Credentials / keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs / temporary files
+*.log
+*.tmp
+*.temp
+~$*
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,41 @@
+ELECSPEED-CHATGPT v1.12 개발 인수인계서 (2026-09-17)
+
+[핵심 결론]
+- 현재 기준 소스: work.zip/chatgpt-categories
+- 배포 APK: elecspeed-chatgpt-v1.12.apk, versionName 1.12 / versionCode 13
+- APK classes.dex는 work.zip/chatgpt-categories/android/build-db4056585f32418b9b2b0a9877a6f54c 빌드와 SHA-256 정확히 일치
+- elecspeed-manual.zip의 work 소스는 과거 v1.2 계열. 이력/문서 참고용이며 최신 기준본 아님
+- claude-switch는 v1.3 계열 별도 분기이며 v1.12 최신 기능과 동기화되지 않음
+
+[현재 구현]
+1. 카테고리 v2 4종 완료
+   - v2_outage: 정전·부분정전·전기안됨
+   - v2_leak_wiring: 누전·배선·절연 이상
+   - v2_breaker_panel: 차단기·분전반·과열·화재징후
+   - v2_outlet_appliance: 콘센트·가전·전열·생활전기 고장
+2. 필수 웹검색 순서를 요청문 맨 앞에 배치
+3. 실제 현장 메모를 검색/제목 주제보다 우선
+4. 최근 제목 최대 40개 + 최근 본문 구조 저장
+5. 40개 작성자 스타일 + 10개 본문 구조
+6. 동일 동/서비스어/제목 문법 반복 회피
+7. ChatGPT 답변 파싱 후 WordPress electric_case에 draft/publish
+8. ACF district/dong/symptom/cause/service, case_type, Yoast meta, featured_media 전송
+
+[중요 주의]
+- 현재 업로드 코드는 case_type taxonomy가 반드시 존재해야 등록됩니다. 실제 사이트가 case_type 미사용 구조라면 수정 필요.
+- signing.jks와 build.ps1의 개발용 키 비밀번호가 work.zip에 포함되어 있으므로 공개 저장소에 올리지 말 것.
+- 전체 실기기 E2E는 업로드 자료만으로 검증할 수 없음.
+- Claude 분기는 v1.12와 동기화되지 않음.
+
+[다음 작업]
+1. 실기기 v1.12 로그인
+2. 출장 사례/정보성 글 각각 요청문 생성
+3. 검색 절차와 실제 메모 우선 규칙 확인
+4. 답변 가져오기 파싱 확인
+5. 미리보기 확인
+6. draft 등록 후 ACF/대표이미지/Yoast/case_type/슬러그 확인
+7. case_type 실제 운영 여부 확정 후 필요 시 코드 정리
+8. publish 테스트
+
+APK SHA-256:
+beeb2488d399b7fd48e6b39812cc1d56a66ae0371b2abe555110dbf1eba43ba7
