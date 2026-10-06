@@ -2365,19 +2365,22 @@
                 <button id="ea-save-settings" style="margin-top:8px;width:100%;">설정 저장</button>
             </fieldset>
 
+            <button id="ea-login" style="width:100%;margin-bottom:6px;">① 로그인</button>
+            <div id="ea-login-status" style="font-size:11px;color:#ccc;margin-bottom:10px;"></div>
+
             <div style="display:flex;gap:8px;margin-bottom:10px;">
-                <button id="ea-preview-keywords" style="flex:1;">저경쟁 키워드 미리보기</button>
-                <button id="ea-generate-draft" style="flex:1;">① 초안 생성(크롤링+글쓰기)</button>
+                <button id="ea-preview-keywords" style="flex:1;" disabled>② 저경쟁 키워드</button>
+                <button id="ea-generate-draft" style="flex:1;" disabled>③ 초안생성</button>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:10px;">
-                <button id="ea-start-auto" style="flex:1;">자동발행 시작</button>
+                <button id="ea-start-auto" style="flex:1;" disabled>자동발행 시작</button>
                 <button id="ea-stop-auto" style="flex:1;">중지</button>
             </div>
 
             <div id="ea-keyword-preview" style="font-size:11px;color:#ccc;margin-bottom:10px;white-space:pre-wrap;"></div>
 
             <fieldset id="ea-draft-box" style="display:none;border:1px solid #4a7;border-radius:8px;padding:10px;margin-bottom:12px;">
-                <legend style="font-size:11px;color:#7d7;padding:0 6px;">② 초안 미리보기 - 확인 후 발행하세요</legend>
+                <legend style="font-size:11px;color:#7d7;padding:0 6px;">초안 미리보기 - 확인 후 발행하세요</legend>
                 <div id="ea-draft-title" style="font-size:13px;font-weight:600;margin-bottom:6px;"></div>
                 <div id="ea-draft-summary" style="font-size:11px;color:#aaa;margin-bottom:6px;"></div>
                 <div id="ea-draft-body" style="font-size:11px;color:#ddd;max-height:220px;overflow-y:auto;background:#111;border-radius:6px;padding:8px;margin-bottom:8px;white-space:pre-wrap;"></div>
@@ -2385,7 +2388,7 @@
                     <input type="checkbox" id="ea-confirm-publish"> 내용을 확인했습니다. 워드프레스에 발행합니다.
                 </label>
                 <div id="ea-publish-warning" style="font-size:10px;color:#f66;margin-bottom:6px;"></div>
-                <button id="ea-publish-draft" style="width:100%;">③ 이 초안 발행하기</button>
+                <button id="ea-publish-draft" style="width:100%;">④ 이 초안 발행하기</button>
             </fieldset>
 
             <div style="font-size:11px;color:#888;margin-bottom:4px;">상태/로그</div>

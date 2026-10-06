@@ -61,9 +61,30 @@
     };
   }
 
+  function setLoggedIn(isLoggedIn) {
+    $("ea-preview-keywords").disabled = !isLoggedIn;
+    $("ea-generate-draft").disabled = !isLoggedIn;
+    $("ea-start-auto").disabled = !isLoggedIn;
+  }
+
   function init() {
     const tabButton = document.querySelector('.tab-btn[data-tab="electric-auto"]');
     if (tabButton) tabButton.addEventListener("click", () => { loadSettingsIntoForm(); refreshLogAndState(); });
+
+    $("ea-login").addEventListener("click", async () => {
+      setLoggedIn(false);
+      $("ea-login-status").textContent = "로그인 확인 중...";
+      try {
+        await sendMessage({ action: "electricSaveSettings", settings: collectSettingsFromForm() });
+        const resp = await sendMessage({ action: "electricCheckLogin" });
+        if (!resp.success) throw new Error(resp.error);
+        $("ea-login-status").textContent = `✅ 로그인 성공 (${resp.data.name})`;
+        setLoggedIn(true);
+      } catch (e) {
+        $("ea-login-status").textContent = `❌ 로그인 실패: ${e.message}`;
+      }
+      refreshLogAndState();
+    });
 
     $("ea-save-settings").addEventListener("click", async () => {
       const settings = collectSettingsFromForm();
@@ -99,6 +120,8 @@
       $("ea-draft-body").innerHTML = draft.html;
       $("ea-confirm-publish").checked = false;
       $("ea-publish-warning").textContent = "";
+      // 미리보기가 화면 아래쪽에 가려서 안 보이는 일이 없도록 자동으로 스크롤해서 보여준다.
+      $("ea-draft-box").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     $("ea-generate-draft").addEventListener("click", async () => {

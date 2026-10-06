@@ -107,22 +107,35 @@ async function searchNaverBlogUrls(keyword, limit = 3) {
   }
 }
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} 시간 초과(${ms}ms)`)), ms))
+  ]);
+}
+
 async function crawlReferenceArticles(keyword, limit = 3) {
-  const urls = await searchNaverBlogUrls(keyword, limit);
+  // 참고글 크롤링은 있으면 좋은 보조 자료일 뿐, 이 단계가 멈추거나 실패해도
+  // 전체 글쓰기 파이프라인이 막히면 안 되므로 각 호출에 타임아웃을 건다.
+  const urls = await withTimeout(searchNaverBlogUrls(keyword, limit), 10000, "네이버 검색").catch(() => []);
   const refs = [];
   for (const url of urls) {
     try {
-      const resp = await new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({ action: "crawlSpecificArticle", url }, r => {
-          if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
-          resolve(r);
-        });
-      });
+      const resp = await withTimeout(
+        new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ action: "crawlSpecificArticle", url }, r => {
+            if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
+            resolve(r);
+          });
+        }),
+        15000,
+        "참고글 크롤링"
+      );
       if (resp && resp.success && resp.contentText) {
         refs.push({ url, text: resp.contentText.slice(0, 1500) });
       }
     } catch (e) {
-      // 개별 글 크롤링 실패는 무시하고 계속 진행
+      // 개별 글 크롤링 실패/시간초과는 무시하고 계속 진행
     }
   }
   return refs;
@@ -230,11 +243,36 @@ async function generateArticleViaApi(keyword, references) {
   throw lastError || new Error("모든 Gemini API 키에서 실패했습니다.");
 }
 
+// ---- 3-9. 로그인 (Android 앱의 login()과 동일: 먼저 로그인 확인부터 하고, 성공한 auth만 발행에 쓴다) ----
+let loggedInSession = null; // { wpSiteUrl, wpUsername, auth }
+
+async function checkWordPressLogin(settings) {
+  if (!settings.wpUsername || !settings.wpAppPassword) {
+    throw new Error("사용자명과 애플리케이션 비밀번호를 입력해주세요.");
+  }
+  const auth = "Basic " + btoa(`${settings.wpUsername}:${settings.wpAppPassword}`);
+  const base = settings.wpSiteUrl.replace(/\/$/, "");
+
+  console.log("[electric_auto] 로그인 시도", {
+    wpSiteUrl: base,
+    wpUsername: settings.wpUsername,
+    passwordLength: settings.wpAppPassword.length,
+    authHeaderLength: auth.length
+  });
+
+  const res = await fetch(`${base}/wp-json/wp/v2/users/me?context=edit`, { headers: { Authorization: auth } });
+  const body = await res.json().catch(() => ({}));
+  console.log("[electric_auto] 로그인 확인(users/me) 상태:", res.status, body);
+  if (!res.ok || !(body.id > 0)) {
+    loggedInSession = null;
+    throw new Error(`로그인 실패 (HTTP ${res.status}) - ${body.message || "계정 확인에 실패했습니다."}`);
+  }
+  loggedInSession = { wpSiteUrl: settings.wpSiteUrl, wpUsername: settings.wpUsername, auth };
+  return { name: body.name || settings.wpUsername };
+}
+
 // ---- 4. WordPress 발행 (featured_media는 절대 건드리지 않는다) ----
 async function publishToWordPress(article, settings) {
-  if (!settings.wpUsername || !settings.wpAppPassword) {
-    throw new Error("설정 탭에서 워드프레스 계정/애플리케이션 비밀번호를 먼저 입력해주세요.");
-  }
   const slug =
     article.title
       .toLowerCase()
@@ -243,27 +281,32 @@ async function publishToWordPress(article, settings) {
       .replace(/\s+/g, "-")
       .slice(0, 80) || `electric-${Date.now()}`;
 
-  const auth = "Basic " + btoa(`${settings.wpUsername}:${settings.wpAppPassword.replace(/\s/g, "")}`);
+  // 로그인(checkWordPressLogin)을 먼저 해야만 얻을 수 있는 auth를 쓴다 - 발행 시점에 다시 로그인하지 않는다.
+  if (!loggedInSession || loggedInSession.wpSiteUrl !== settings.wpSiteUrl || loggedInSession.wpUsername !== settings.wpUsername) {
+    throw new Error("먼저 '① 로그인'을 눌러 로그인에 성공한 뒤 발행해주세요.");
+  }
+  const auth = loggedInSession.auth;
   const base = settings.wpSiteUrl.replace(/\/$/, "");
 
-  const dupCheck = await fetch(
-    `${base}/wp-json/wp/v2/electric_case?slug=${encodeURIComponent(slug)}&status=publish,draft,pending,future,private`,
+  const dupResp = await fetch(
+    `${base}/wp-json/wp/v2/electric_case?slug=${encodeURIComponent(slug)}&context=edit&status=publish,draft,pending,future,private`,
     { headers: { Authorization: auth } }
-  ).then(r => (r.ok ? r.json() : []));
+  );
+  console.log("[electric_auto] 중복확인 GET 상태:", dupResp.status);
+  const dupCheck = dupResp.ok ? await dupResp.json() : [];
   if (Array.isArray(dupCheck) && dupCheck.length > 0) {
     throw new Error(`이미 같은 슬러그("${slug}")의 글이 존재합니다.`);
   }
 
+  // Android 앱(request("GET","case_type?slug=..."))과 동일하게, 못 찾으면 바로 실패시킨다.
   const caseTypeSlug = matchCaseTypeSlug(article.keyword);
-  let caseTypeTermId = null;
-  try {
-    const termResp = await fetch(`${base}/wp-json/wp/v2/case_type?slug=${encodeURIComponent(caseTypeSlug)}`, {
-      headers: { Authorization: auth }
-    }).then(r => (r.ok ? r.json() : []));
-    if (Array.isArray(termResp) && termResp[0]) caseTypeTermId = termResp[0].id;
-  } catch (e) {
-    // case_type 조회 실패해도 발행 자체는 계속 진행 (taxonomy 없이)
+  const termResp = await fetch(`${base}/wp-json/wp/v2/case_type?slug=${encodeURIComponent(caseTypeSlug)}`, {
+    headers: { Authorization: auth }
+  }).then(r => (r.ok ? r.json() : []));
+  if (!Array.isArray(termResp) || !termResp[0]) {
+    throw new Error(`사이트에서 작업 유형을 찾지 못했습니다: ${caseTypeSlug}`);
   }
+  const caseTypeTermId = termResp[0].id;
 
   const body = {
     title: article.title,
@@ -271,21 +314,24 @@ async function publishToWordPress(article, settings) {
     content: article.html,
     excerpt: article.summary,
     status: settings.publishStatus === "publish" ? "publish" : "draft",
+    // Android 앱 payload와 동일한 구조 (featured_media만 제외 - 이 프로젝트 규칙)
+    acf: { district: "", dong: "", symptom: "", cause: "", service: "" },
+    case_type: [caseTypeTermId],
     meta: {
       _yoast_wpseo_title: article.title,
       _yoast_wpseo_metadesc: article.summary,
       _yoast_wpseo_focuskw: article.keyword
     }
   };
-  if (caseTypeTermId) body.case_type = [caseTypeTermId];
 
   const res = await fetch(`${base}/wp-json/wp/v2/electric_case`, {
     method: "POST",
-    headers: { Authorization: auth, "Content-Type": "application/json" },
+    headers: { Authorization: auth, "Content-Type": "application/json; charset=UTF-8" },
     body: JSON.stringify(body)
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.message || `워드프레스 발행 실패 (HTTP ${res.status})`);
+  console.log("[electric_auto] 발행 POST 상태:", res.status, json);
+  if (!res.ok) throw new Error(`HTTP ${res.status} - ${json.message || JSON.stringify(json)}`);
   return { id: json.id, link: json.link, status: body.status };
 }
 
@@ -301,6 +347,7 @@ async function generateDraft(keywordObj) {
 // 5-2. (자동발행 모드 전용) 크롤링->생성->발행까지 한 번에
 async function runOnePost(keywordObj) {
   const settings = await getSettings();
+  await checkWordPressLogin(settings);
   const article = await generateDraft(keywordObj);
   const result = await publishToWordPress(article, settings);
   return { keyword: article.keyword, title: article.title, ...result };
@@ -382,6 +429,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     case "electricGetState":
       getState().then(data => sendResponse({ success: true, data }));
+      return true;
+
+    case "electricCheckLogin":
+      (async () => {
+        try {
+          const settings = await getSettings();
+          const result = await checkWordPressLogin(settings);
+          await appendLog(`로그인 성공: ${result.name}`);
+          sendResponse({ success: true, data: result });
+        } catch (e) {
+          await appendLog(`로그인 실패: ${e.message}`);
+          sendResponse({ success: false, error: e.message });
+        }
+      })();
       return true;
 
     case "electricPreviewKeywords":
