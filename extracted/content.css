@@ -1,0 +1,82 @@
+.keyword-quick-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    user-select: none;
+    white-space: nowrap;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.keyword-analysis-popup {
+    width: 300px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    border: 1px solid #e1e5e9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #333;
+}
+
+.kap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.kap-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.kap-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #999;
+}
+
+.kap-content {
+    padding: 16px;
+    font-size: 13px;
+}
+
+.kap-loader, .kap-error {
+    text-align: center;
+    color: #666;
+    padding: 20px 0;
+}
+.kap-error {
+    color: #d9534f;
+}
+
+.kap-results {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.kap-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.kap-result-item strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+

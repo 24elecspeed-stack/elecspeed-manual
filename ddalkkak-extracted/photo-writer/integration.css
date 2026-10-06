@@ -1,0 +1,160 @@
+.photo-destination { padding: 18px; margin: 16px auto; border: 1px solid #c8ded8; border-radius: 14px; background: #f3faf7; max-width: 1000px; color: #203b35; }
+.photo-destination h2 { margin: 0 0 10px; font-size: 17px; }
+.photo-destination label { display: block; margin: 10px 0 5px; font-size: 13px; font-weight: 600; }
+.photo-destination select, .photo-destination input { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #c8d8d2; background: white; }
+.photo-destination .photo-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.photo-destination button { cursor: pointer; border: 1px solid #b8cfc7; background: white; color: #183f32; border-radius: 9px; padding: 11px 14px; font-weight: 600; }
+.photo-destination button.photo-insert { background: #008b63; color: white; flex: 1; }
+.photo-destination button:disabled { opacity: .5; cursor: wait; }
+.photo-destination p { font-size: 13px; line-height: 1.65; margin: 10px 0 0; }
+.photo-destination .photo-status { white-space: pre-wrap; }
+.photo-destination [hidden] { display: none !important; }
+.article-content img { max-width: 100%; height: auto; }
+.app-container { max-width: 1040px; margin: 0 auto; }
+.photo-writer-embedded .app-header { display: none; }
+.photo-writer-embedded, .photo-writer-embedded body { height: auto; min-height: 0; }
+.photo-writer-embedded .app-container { min-height: 0; padding: 0; }
+.page-body { flex-direction: column; align-items: center; gap: 20px; }
+.page-body > .photo-destination { width: 100%; box-sizing: border-box; margin: 0 auto; flex-shrink: 0; }
+
+/* Match the embedded writer to the main Ddalkkak SNS side-panel system. */
+.photo-writer-embedded {
+  --primary: #0b6654;
+  --primary-hover: #075444;
+  --accent: #0b6654;
+  --accent-hover: #075444;
+  --bg: transparent;
+  --card-bg: #ffffff;
+  --text: #172033;
+  --text-muted: #5c6980;
+  --border: rgba(17, 24, 39, 0.1);
+  --radius-sm: 10px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.photo-writer-embedded body {
+  min-width: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--text);
+  font: 13px/1.45 "Segoe UI", "Malgun Gothic", sans-serif;
+}
+
+.photo-writer-embedded .app-container {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.photo-writer-embedded .stepper {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.photo-writer-embedded .step-item { color: var(--text-muted); font-weight: 700; }
+.photo-writer-embedded .step-item.active { color: var(--primary); }
+.photo-writer-embedded .step-num { background: #edf2f8; color: #425166; }
+.photo-writer-embedded .step-item.active .step-num,
+.photo-writer-embedded .step-item.completed .step-num { background: var(--primary); color: #ffffff; }
+.photo-writer-embedded .step-divider { background: var(--border); }
+
+.photo-writer-embedded .card,
+.photo-writer-embedded .diagnostics-panel,
+.photo-writer-embedded .photo-destination {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.photo-writer-embedded .card { padding: 12px; }
+.photo-writer-embedded .card-title { margin-bottom: 12px; color: var(--text); }
+.photo-writer-embedded .form-group { margin-bottom: 10px; }
+.photo-writer-embedded .form-group label { color: var(--text-muted); font-weight: 700; }
+
+.photo-writer-embedded input[type="text"],
+.photo-writer-embedded input[type="number"],
+.photo-writer-embedded textarea,
+.photo-writer-embedded select {
+  padding: 9px 10px;
+  border: 1px solid rgba(23, 32, 51, 0.14);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.photo-writer-embedded input:focus,
+.photo-writer-embedded textarea:focus,
+.photo-writer-embedded select:focus {
+  border-color: rgba(11, 102, 84, 0.55);
+  box-shadow: 0 0 0 3px rgba(11, 102, 84, 0.12);
+}
+
+.photo-writer-embedded .btn {
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.photo-writer-embedded .btn-primary,
+.photo-writer-embedded .btn-accent { background: var(--primary); color: #ffffff; }
+.photo-writer-embedded .btn-primary:hover:not(:disabled),
+.photo-writer-embedded .btn-accent:hover:not(:disabled) { background: var(--primary-hover); }
+.photo-writer-embedded .btn-secondary,
+.photo-writer-embedded .btn-diag-outline { background: #ffffff; color: var(--text); border: 1px solid rgba(23, 32, 51, 0.14); }
+
+.photo-writer-embedded .image-dropzone {
+  border-color: rgba(11, 102, 84, 0.3);
+  border-radius: 12px;
+  background: #f9fbfd;
+}
+.photo-writer-embedded .image-dropzone:hover,
+.photo-writer-embedded .image-dropzone.dragover { border-color: var(--primary); background: #e4f3ee; }
+
+.photo-writer-embedded .hero-status-banner,
+.photo-writer-embedded .section-guide-text,
+.photo-writer-embedded .image-usage-option-section,
+.photo-writer-embedded .draft-box { background: #f9fbfd; border-color: var(--border); }
+.photo-writer-embedded .hero-status-text strong,
+.photo-writer-embedded .chip-label,
+.photo-writer-embedded .quick-chip,
+.photo-writer-embedded .custom-count-input { color: var(--primary); }
+.photo-writer-embedded .hero-badge-tag { background: var(--primary); }
+.photo-writer-embedded .usage-radio-card.active { background: #e4f3ee; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(11, 102, 84, 0.08); }
+.photo-writer-embedded .badge-usage-mode,
+.photo-writer-embedded .badge-version.revised { background: #e4f3ee; color: #075444; border-color: rgba(11, 102, 84, 0.2); }
+
+.photo-writer-embedded .revision-card { border-color: rgba(11, 102, 84, 0.18); background: linear-gradient(180deg, #ffffff 0%, #f4fbf8 100%); }
+.photo-writer-embedded .revision-title { color: var(--text); }
+.photo-writer-embedded .quick-chip { border-color: rgba(11, 102, 84, 0.22); }
+.photo-writer-embedded .quick-chip:hover { background: #e4f3ee; border-color: var(--primary); color: #075444; }
+
+.photo-writer-embedded .photo-destination {
+  max-width: none;
+  margin: 12px 0 0;
+  padding: 12px;
+  color: var(--text);
+}
+.photo-writer-embedded .photo-destination h2 { margin-bottom: 0; font-size: 12px; font-weight: 800; color: var(--text-muted); }
+.photo-writer-embedded .photo-destination label { color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.photo-writer-embedded .photo-destination select { border-color: rgba(23, 32, 51, 0.14); border-radius: 10px; }
+.photo-writer-embedded .photo-destination button { min-height: 38px; border-radius: 10px; font-weight: 800; }
+.photo-writer-embedded .photo-destination button.photo-insert { border-color: var(--primary); background: var(--primary); }
+.photo-writer-embedded .photo-destination .photo-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.photo-writer-embedded .photo-connected-tab { margin: 0; padding: 8px 10px; border-radius: 10px; background: #f9fbfd; color: var(--text-muted); overflow-wrap: anywhere; }
+.photo-writer-embedded .photo-connected-tab.connected { background: #e4f3ee; color: #075444; font-weight: 700; }
+
+.photo-writer-embedded .diagnostics-panel { margin-top: 12px; }
+.photo-writer-embedded .diag-header { padding: 9px 12px; background: #f9fbfd; }
+.photo-writer-embedded .btn-diag-copy { border-color: rgba(11, 102, 84, 0.2); background: #e4f3ee; color: #075444; }
+.photo-writer-embedded .app-footer { color: var(--text-muted); }
+
+/* The parent panel already provides reporting, copying and email actions. */
+.photo-writer-embedded .diagnostics-panel,
+.photo-writer-embedded .app-footer { display: none; }

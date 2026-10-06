@@ -1,0 +1,553 @@
+/* thumbnail_3d.css - Cyber/Dark Modern Theme */
+
+:root {
+    --bg-overlay: #13131a;
+    --bg-panel: #1f1f2e;
+    --text-main: #ffffff;
+    --text-muted: #8b8b9e;
+    --primary-gradient: linear-gradient(135deg, #6C5DD3 0%, #4B36CC 100%);
+    --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+    --neon-glow: 0 0 10px rgba(108, 93, 211, 0.5);
+    --border-color: #2c2c3a;
+}
+
+/* 전체 오버레이 */
+.threed-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: var(--bg-overlay);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Pretendard', sans-serif;
+    color: var(--text-main);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.threed-overlay.hidden {
+    transform: translateY(100%);
+    pointer-events: none;
+}
+
+/* 헤더 */
+.threed-header {
+    height: 64px;
+    padding: 0 24px;
+    background: rgba(31, 31, 46, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.threed-title {
+    font-weight: 800;
+    font-size: 18px;
+    background: linear-gradient(to right, #fff, #a5a5a5);
+    -webkit-background-clip: text;
+    background-clip: text; /* 표준 속성 */
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.close-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: white;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; justify-content: center; align-items: center;
+}
+.close-btn:hover { background: rgba(255,255,255,0.2); transform: rotate(90deg); }
+
+/* 바디 레이아웃 */
+.threed-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* --- 좌측 컨트롤 패널 --- */
+.threed-controls {
+    width: 360px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-color);
+    padding: 30px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    flex-shrink: 0;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+/* 스크롤바 커스텀 */
+.threed-controls::-webkit-scrollbar { width: 6px; }
+.threed-controls::-webkit-scrollbar-thumb { background: #3f3f50; border-radius: 3px; }
+.threed-controls::-webkit-scrollbar-track { background: transparent; }
+
+/* 파일 업로드 버튼 영역 */
+.file-group { margin-bottom: 10px; }
+
+/* 슬라이더 그룹 */
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.slider-row label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.slider-row label span {
+    color: #00d2ff;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    background: rgba(0, 210, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* 커스텀 슬라이더 스타일 */
+.slider-row input[type=range] {
+    width: 100%;
+    appearance: none;
+    background: transparent;
+    height: 4px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+/* 슬라이더 트랙 (Chrome/Safari) */
+.slider-row input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: #333344;
+    border-radius: 3px;
+    border: none;
+}
+
+/* 슬라이더 썸 (핸들) */
+.slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    margin-top: -6px; /* track height(6)/2 - thumb height(18)/2 */
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.slider-row input[type=range]:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px #00d2ff;
+    background: #00d2ff;
+}
+
+.reset-icon {
+    float: right;
+    font-size: 14px;
+    cursor: pointer;
+    color: #555;
+    margin-top: 6px;
+    transition: color 0.3s, transform 0.3s;
+}
+.reset-icon:hover { color: #fff; transform: rotate(180deg); }
+
+/* 버튼 스타일 리뉴얼 */
+.btn-3d {
+    width: 100%;
+    padding: 14px;
+    font-weight: 700;
+    font-size: 13px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Primary: 파일 업로드 */
+.btn-3d.primary {
+    background: #2c2c3a;
+    color: white;
+    border: 1px solid #444;
+}
+.btn-3d.primary:hover {
+    background: #3a3a4a;
+    border-color: #666;
+    transform: translateY(-2px);
+}
+
+/* Success: AI 생성 (가장 강조) */
+.btn-3d.success {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 4px 15px rgba(108, 93, 211, 0.4);
+}
+.btn-3d.success:hover {
+    box-shadow: 0 6px 20px rgba(108, 93, 211, 0.6);
+    transform: translateY(-2px) scale(1.02);
+}
+/* 반짝이는 효과 */
+.btn-3d.success::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+    transform: skewX(-20deg);
+    animation: shine 3s infinite;
+}
+@keyframes shine { 
+    0% { left: -100%; } 
+    20% { left: 200%; } 
+    100% { left: 200%; } 
+}
+
+/* Outline: 다운로드/복사 */
+.btn-3d.outline {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-main);
+}
+.btn-3d.outline:hover {
+    border-color: #00d2ff;
+    color: #00d2ff;
+    background: rgba(0, 210, 255, 0.05);
+}
+
+/* 작은 텍스트 버튼들 */
+.small-btns {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.btn-text {
+    background: none; border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-text:hover {
+    background: rgba(255,255,255,0.05);
+    color: white;
+}
+
+.separator { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+.desc-text { font-size: 11px; color: #666; text-align: center; margin-top: 8px; line-height: 1.4; }
+
+/* --- 우측 프리뷰 패널 --- */
+.threed-preview-area {
+    flex: 1;
+    /* 3D 공간감을 위한 배경 */
+    background-color: #13131a;
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    /* 중앙 비네팅 효과 */
+    box-shadow: inset 0 0 150px rgba(0,0,0,0.8);
+    
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    cursor: grab;
+}
+.threed-preview-area:active { cursor: grabbing; }
+
+.threed-scene {
+    width: 600px;
+    height: 400px;
+    position: relative;
+    transform-style: preserve-3d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.threed-object {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.1s linear;
+    /* 세련된 그림자 */
+    filter: drop-shadow(0 30px 60px rgba(0,0,0,0.6));
+}
+
+.threed-object img {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+    backface-visibility: hidden;
+    /* 기본적으로 약간의 빛 반사 효과 추가 (선택사항) */
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,1)); 
+}
+
+/* 이미지가 없을 때 플레이스홀더 */
+.threed-placeholder {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    color: #444;
+}
+.threed-placeholder span { font-size: 64px; margin-bottom: 10px; display: block; opacity: 0.5; }
+.threed-placeholder p { font-weight: 600; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+
+#threed-img[src=""] { display: none; }
+#threed-img[src=""] + .threed-placeholder { display: block; }
+#threed-img:not([src=""]) + .threed-placeholder { display: none; }
+
+/* 안내 메시지 */
+.threed-guide {
+    position: absolute;
+    bottom: 30px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(4px);
+    color: rgba(255,255,255,0.7);
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 11px;
+    pointer-events: none;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+
+/* Accent: 현재 이미지 리플레이스 (핑크/보라 계열) */
+.btn-3d.accent {
+    background: linear-gradient(135deg, #ff00cc 0%, #333399 100%);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 4px 15px rgba(255, 0, 204, 0.3);
+}
+.btn-3d.accent:hover {
+    background: linear-gradient(135deg, #ff33dd 0%, #4444aa 100%);
+    box-shadow: 0 6px 20px rgba(255, 0, 204, 0.5);
+    transform: translateY(-2px) scale(1.02);
+}
+/* 반짝이는 효과 재사용 */
+.btn-3d.accent::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+    transform: skewX(-20deg);
+    animation: shine 3s infinite;
+    animation-delay: 1.5s; /* success 버튼과 타이밍 다르게 */
+}
+
+/* --- 툴팁 하단 배치 버전 --- */
+.tooltip-container {
+    position: relative;
+    width: 100%;
+    display: inline-block;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: #333344;
+    color: #00d2ff;
+    text-align: center;
+    border-radius: 8px;
+    padding: 10px;
+    position: absolute;
+    z-index: 100;
+    /* 버튼 하단 배치를 위해 top 사용 */
+    top: 125%; 
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    pointer-events: none;
+}
+
+/* 하단 툴팁용 */
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    bottom: 100%; /* 툴팁 위쪽에 배치 */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #333344 transparent;
+}
+
+/* 마우스 호버 시 아래로 살짝 내려오며 등장 */
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(5px);
+}
+
+
+/* Warning: Gems Web 전송 (오렌지/레드 계열) */
+.btn-3d.warning {
+    background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 94, 98, 0.4);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-3d.warning:hover {
+    background: linear-gradient(135deg, #FFB088 0%, #FF7A7E 100%);
+    box-shadow: 0 6px 20px rgba(255, 94, 98, 0.6);
+    transform: translateY(-2px) scale(1.02);
+}
+/* 반짝이는 효과 */
+.btn-3d.warning::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+    transform: skewX(-20deg);
+    animation: shine 3s infinite;
+    animation-delay: 0.8s; /* 다른 버튼과 타이밍 다르게 */
+}
+
+
+
+
+/* 프리셋 버튼 스타일 */
+.btn-preset {
+    flex: 1;
+    background: #333344;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 8px 0;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-preset:hover {
+    background: #444455;
+    color: white;
+    border-color: #666;
+}
+.btn-preset:active {
+    background: var(--primary-gradient);
+    color: white;
+    border-color: transparent;
+}
+
+/* 드롭다운 스타일 */
+.select-3d {
+    width: 100%;
+    background: #2c2c3a;
+    color: white;
+    border: 1px solid #444;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    outline: none;
+    cursor: pointer;
+}
+.select-3d:focus {
+    border-color: #6C5DD3;
+}
+
+
+
+/* 접기/펴기 스타일 */
+details.camera-details {
+    transition: all 0.3s ease;
+}
+
+summary.camera-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 5px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    list-style: none; /* 기본 삼각형 제거 */
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+summary.camera-summary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 웹킷 브라우저용 기본 마커 제거 */
+summary.camera-summary::-webkit-details-marker {
+    display: none;
+}
+
+summary.camera-summary .material-icons-outlined:first-child {
+    margin-right: 8px;
+    color: #6C5DD3; /* 아이콘 포인트 컬러 */
+}
+
+/* 화살표 아이콘 회전 애니메이션 */
+summary.camera-summary .toggle-icon {
+    font-size: 18px;
+    color: #8b8b9e;
+    transition: transform 0.3s ease;
+}
+
+details.camera-details[open] summary .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* 프리셋 버튼 툴팁 커서 */
+.btn-preset[title], .select-3d[title] {
+    cursor: help;
+}
+
+/* 모바일 반응형 */
+@media screen and (max-width: 768px) {
+    .threed-body { flex-direction: column-reverse; }
+    .threed-controls { width: 100%; height: auto; max-height: 50%; padding: 20px; border-right: none; border-top: 1px solid var(--border-color); }
+    .threed-preview-area { height: 50%; }
+}
+
+

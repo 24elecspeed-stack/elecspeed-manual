@@ -1,0 +1,178 @@
+{
+  "manifest_version": 3,
+  "name": "전기 블로그 키워드 리서치",
+  "description": "네이버 경쟁 블로그 제목·본문 수집 및 검색 등록 여부 확인용 내부 도구 (Ai 키워드 마스터 Ver1.7 기반 커스텀)",
+  "version": "1.7",
+  "author": "Internal",
+  "icons": {
+    "16": "icon.png", "32": "icon.png", "48": "icon.png", "128": "icon.png"
+  },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": {
+    "default_title": "전기 블로그 키워드 리서치",
+    "default_icon": { "16": "icon.png", "32": "icon.png", "48": "icon.png", "128": "icon.png" }
+  },
+
+  "sandbox": {
+    "pages": ["ffmpeg_worker.html"]
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["content.css"], "js": ["content.js"],
+      "run_at": "document_end", "all_frames": true
+    },
+
+    {
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
+      "js": ["content_gpts.js"],
+      "run_at": "document_idle"
+    },
+
+    {
+      "matches": ["https://whereispost.com/morpheme/*"],
+      "js": ["content_morpheme.js"],
+      "run_at": "document_idle"
+    },
+
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["content_gems.js"],
+      "run_at": "document_idle"
+    },
+
+    {
+      "matches": [
+        "https://blog.naver.com/*?Redirect=Write*",
+        "https://blog.naver.com/PostWriteForm.naver*",
+        "https://blog.naver.com/PostView.naver*",
+        "https://blog.naver.com/PostList.naver*",
+        "https://section.blog.naver.com/BlogHome.naver*",
+        "https://m.blog.naver.com/*?Redirect=Write*",
+        "https://m.blog.naver.com/PostWriteForm.naver*",
+        "https://m.blog.naver.com/PostView.naver*",
+        "https://m.blog.naver.com/PostList.naver*",
+        "https://m.section.blog.naver.com/BlogHome.naver*"
+      ],
+      "js": ["content_ai.js"], "run_at": "document_end", "all_frames": false
+    },
+
+    {
+      "matches": [
+        "https://blog.naver.com/*?Redirect=Write*",
+        "https://blog.naver.com/PostWriteForm.naver*",
+        "https://blog.naver.com/PostView.naver*",
+        "https://blog.naver.com/PostList.naver*",
+        "https://section.blog.naver.com/BlogHome.naver*",
+        "https://m.blog.naver.com/*?Redirect=Write*",
+        "https://m.blog.naver.com/PostWriteForm.naver*",
+        "https://m.blog.naver.com/PostView.naver*",
+        "https://m.blog.naver.com/PostList.naver*",
+        "https://m.section.blog.naver.com/BlogHome.naver*"
+      ],
+      "js": ["content_ai_floating.js"], "run_at": "document_end", "all_frames": false
+    },
+
+    {
+      "matches": ["https://trends.google.com/trending*"],
+      "js": ["google_trend_content.js"]
+    },
+
+    {
+      "matches": ["https://blackkiwi.net/service/trend*"],
+      "js": ["blackkiwi_trend_content.js"]
+    },
+    {
+      "matches": ["https://whereispost.com/hot*"],
+      "js": ["whereispost_trend_content.js"]
+    },
+
+
+    {
+      "matches": ["https://blog.naver.com/*", "https://brand.naver.com/*"],
+      "exclude_matches": [
+        "*://blog.naver.com/*/postwrite*",
+        "*://blog.naver.com/PostWriteForm.naver*",
+        "*://m.blog.naver.com/*/postwrite*",
+        "*://m.blog.naver.com/PostWriteForm.naver*",
+        "*://*.blog.naver.com/*?Redirect=Write*"
+      ],
+      "js": ["content_downloader.js"],
+      "css": ["content_downloader.css"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+
+  ],
+  "permissions": [
+    "storage", "activeTab", "contextMenus", "notifications", "scripting",
+    "cookies", "webRequest", "offscreen", "alarms","unlimitedStorage",
+    "clipboardRead", "clipboardWrite", "declarativeNetRequest", "downloads", "sidePanel", "windows","identity", "debugger"
+  ],
+
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+
+
+  "host_permissions": [
+    "<all_urls>",
+    "https://api.naver.com/*",
+    "https://openapi.naver.com/*",
+    "https://search.naver.com/*",
+    "https://suggestqueries.google.com/*",
+    "https://clients1.google.com/*",
+    "https://m.search.naver.com/*",
+    "https://blog.naver.com/*",
+    "https://m.blog.naver.com/*",
+    "https://rss.blog.naver.com/*",
+    "*://datalab.naver.com/*",
+    "https://chatgpt.com/*",
+    "https://www.googleapis.com/*",
+    "https://accounts.google.com/*",
+    "https://*.googleusercontent.com/*",
+    "https://*.ggpht.com/*",
+    "https://www.blogger.com/*",
+    "https://www.threads.net/*",
+    "https://x.com/*"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content.css", "background_thumbnail.png", "H2_thumbnail.jpg","AI-model.jpg", "fonts/HMKMRHD.ttf",
+        "monitor.html", "monitor.js", "popup.js", "connection_keyword_auto_Writing.js",
+        "ameba_inserter.js", "tistory_inserter.js", "blogspot_inserter.js",  "naver_cafe_inserter.js",
+        "capcut_sync.html", "capcut_sync.js", "capcut_sync.css","vrew_sync.html", "vrew_sync.js",
+        "default_js/worker.min.js", "default_js/tesseract-core.wasm.js", "default_js/tesseract-core.wasm", "default_js/kor.traineddata", "default_js/eng.traineddata",
+        "default_js/qpdf.js", "default_js/qpdf.wasm", "fetchInterceptor.js",
+        "local_nanobanana.html", "local_nanobanana.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "commands": {
+    "analyze_keyword": {
+      "suggested_key": { "default": "Ctrl+Shift+K", "mac": "Command+Shift+K" },
+      "description": "선택된 텍스트 키워드 분석"
+    }
+  },
+  "declarative_net_request": {
+    "rule_resources": [{
+      "id": "ruleset_1",
+      "enabled": true,
+      "path": "rules_anti_frame.json"
+    }]
+  },
+  "omnibox": { "keyword": "키워드" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; img-src 'self' data: https: blob:; media-src 'self' data: https: blob:; worker-src 'self';",
+    "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; worker-src 'self' blob:;"
+  }
+
+
+
+  
+}

@@ -1,0 +1,29 @@
+/* 29. 콘텐츠 스크립트용 아이콘 스타일 (다운로드 & 복사) */
+.keyword-master-download-overlay,
+.keyword-master-copy-overlay {
+    position: absolute; /* JS가 top, left를 계산하여 지정 */
+    width: 28px;
+    height: 28px;
+    background-color: rgba(0, 0, 0, 0.65);
+    border-radius: 50%;
+    display: none; /* JS가 조건에 맞을 때 flex로 변경 */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2147483646;
+    transition: background-color 0.2s;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.keyword-master-download-overlay:hover,
+.keyword-master-copy-overlay:hover {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+.keyword-master-download-overlay svg,
+.keyword-master-copy-overlay svg {
+    width: 16px;
+    height: 16px;
+    fill: white;
+}

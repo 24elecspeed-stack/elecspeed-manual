@@ -1,0 +1,79 @@
+{
+   "action": {
+      "default_icon": {
+         "16": "icon-16.png",
+         "32": "icon-32.png",
+         "48": "icon-48.png"
+      },
+      "default_title": "__MSG_actionTitle__"
+   },
+   "background": {
+      "service_worker": "background.js"
+   },
+   "commands": {
+      "nb-trigger-auto-write": {
+         "suggested_key": {
+            "default": "Ctrl+Shift+Y"
+         },
+         "description": "현재 포커스된 창에서 한번에 실행(초안+이미지+입력)을 시작합니다"
+      }
+   },
+   "content_scripts": [ {
+      "js": [ "gemini-content.js" ],
+      "matches": [ "https://gemini.google.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "chatgpt-content.js" ],
+      "matches": [ "https://chatgpt.com/*", "https://chat.openai.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "js": [ "claude-content.js" ],
+      "matches": [ "https://claude.ai/*" ],
+      "run_at": "document_idle"
+   } ],
+   "default_locale": "en",
+   "description": "__MSG_appDescription__",
+   "host_permissions": [
+      "https://gemini.google.com/*",
+      "https://www.google.com/*",
+      "https://script.google.com/*",
+      "https://script.googleusercontent.com/*",
+      "https://chatgpt.com/*",
+      "https://chat.openai.com/*",
+      "https://claude.ai/*",
+      "https://*.gstatic.com/*",
+      "https://*.oaiusercontent.com/*",
+      "https://lh3.googleusercontent.com/*",
+      "https://*.googleusercontent.com/*",
+      "https://*.usercontent.google.com/*",
+      "https://section.blog.naver.com/*",
+      "https://search.naver.com/*",
+      "https://blog.naver.com/*",
+      "https://m.blog.naver.com/*",
+      "https://blog.editor.naver.com/*",
+      "https://editor.naver.com/*",
+      "https://cafe.naver.com/*",
+      "https://www.blogger.com/*",
+      "https://draft.blogger.com/*",
+      "https://*.tistory.com/*",
+      "https://www.instagram.com/*",
+      "https://www.threads.com/*",
+      "https://www.threads.net/*",
+      "https://nominatim.openstreetmap.org/*"
+   ],
+   "icons": {
+      "128": "icon-128.png",
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png"
+   },
+   "manifest_version": 3,
+   "name": "__MSG_appName__",
+   "permissions": [ "activeTab", "sidePanel", "scripting", "storage", "tabs", "windows" ],
+   "short_name": "__MSG_shortName__",
+   "side_panel": {
+      "default_path": "sidepanel.html"
+   },
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "2.0.6"
+}

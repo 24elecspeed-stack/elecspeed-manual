@@ -1,0 +1,494 @@
+:root {
+    --bg-dark: #1e1e2f;
+    --bg-panel: #27293d;
+    --accent: #667eea;
+    --text-main: #ffffff;
+    --text-sub: #a0a0a0;
+    --border: #3e4050;
+}
+
+* { box-sizing: border-box; user-select: none; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Header */
+.top-bar {
+    height: 60px;
+    background-color: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: bold;
+    /* 표준 속성 추가 */
+    background: linear-gradient(to right, #667eea, #764ba2);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block; /* 그라디언트 텍스트 짤림 방지 */
+}
+
+.file-actions { display: flex; gap: 10px; }
+
+.tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tool-btn.primary { background: #3e4050; color: white; }
+.tool-btn.primary:hover { background: #505260; }
+.tool-btn.success { background: var(--accent); color: white; }
+.tool-btn.success:hover { background: #5a6fd6; }
+
+/* Workspace */
+.workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Left Toolbar */
+.toolbar-left {
+    width: 80px;
+    background-color: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 0;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.tool-item {
+    width: 60px;
+    height: 60px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-sub);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 11px;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.tool-item:hover { background: rgba(255,255,255,0.05); color: white; }
+.tool-item.active { background: rgba(102, 126, 234, 0.2); color: var(--accent); border-color: var(--accent); }
+.tool-item.danger:hover { color: #ff6b6b; }
+
+.divider { width: 40px; height: 1px; background: var(--border); margin: 5px 0; }
+
+/* ✅ 캔버스 영역: 스크롤 가능하도록 설정 */
+.canvas-area {
+    position: relative;
+    overflow: auto; /* 중요: 확대 시 스크롤바 생성 */
+    background-color: #1a1a24;
+    display: block; /* flex center 제거 (스크롤을 위해) */
+}
+
+/* 캔버스 래퍼: 실제 줌이 적용될 대상 */
+.canvas-wrapper {
+    position: relative;
+    width: max-content; /* 내용물 크기만큼 잡히게 */
+    margin: 0 auto; /* 중앙 정렬 */
+    transform-origin: top left; /* 줌 기준점 */
+    transition: transform 0.1s ease-out; /* 부드러운 줌 효과 */
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+}
+
+canvas {
+    background: white;
+    cursor: crosshair;
+    display: block;
+    /* ✅ 모바일 제스처(확대/축소/스크롤)가 캔버스 그리기를 방해하지 않도록 설정 */
+    touch-action: none; 
+}
+
+
+
+/* Right Property Panel */
+.property-panel {
+    width: 280px;
+    background-color: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.panel-section { margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+.panel-section:last-child { border-bottom: none; }
+.panel-section h3 { margin: 0 0 15px 0; font-size: 14px; color: white; }
+
+.prop-group { margin-bottom: 15px; }
+.prop-group label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
+
+.color-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+input[type="color"] {
+    /* 표준 속성 추가 */
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    overflow: hidden;
+    padding: 0;
+    cursor: pointer;
+    background: none; /* 배경 투명 */
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border: none; }
+
+input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.btn-mini {
+    width: 100%;
+    padding: 8px;
+    background: #3e4050;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.btn-mini:hover { background: #505260; }
+.btn-mini.danger { background: #ff4757; }
+.btn-mini.danger:hover { background: #ff6b81; }
+
+
+
+
+/* Header 추가 스타일 */
+.ratio-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 20px;
+    margin-right: auto; /* 로고 옆, 버튼 그룹 왼쪽으로 밀기 */
+    background: #3e4050;
+    padding: 5px 10px;
+    border-radius: 6px;
+}
+
+#canvas-ratio {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+#canvas-ratio option {
+    background: var(--bg-panel);
+}
+
+.tool-btn.secondary { background: #3b82f6; color: white; }
+.tool-btn.secondary:hover { background: #2563eb; }
+
+
+
+#ai-prompt-input {
+    background-color: #1a1a24;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    font-family: inherit;
+    resize: none;
+    outline: none;
+}
+
+#ai-prompt-input:focus {
+    border-color: var(--accent);
+}
+
+
+/* ✅ 로딩 애니메이션 정의 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 회전하는 클래스 */
+.spinning {
+    animation: spin 1s linear infinite;
+    display: inline-block; /* 회전을 위해 block 요소로 동작 */
+}
+
+/* 미니 스위치 스타일 (체크박스 옆에 텍스트 배치) */
+.switch-mini {
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--text-sub);
+}
+.switch-mini input {
+    margin: 0;
+    cursor: pointer;
+}
+
+
+/* ✅ 줌 컨트롤러 스타일 (우측 하단 플로팅) */
+.zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(39, 41, 61, 0.9);
+    padding: 5px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 1000; /* 캔버스보다 위에 */
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.zoom-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+.zoom-btn:hover { background: rgba(255,255,255,0.1); }
+#zoom-level { font-size: 12px; color: #ccc; min-width: 40px; text-align: center; }
+
+
+/* ✅ 실시간 텍스트 입력창 스타일 */
+#text-input-box {
+    position: absolute;
+    display: none;
+    
+    /* 배경 및 테두리 */
+    background: rgba(0, 0, 0, 0.3); /* 입력 중임을 알 수 있게 배경색 살짝 추가 */
+    border: 2px dashed #667eea;
+    outline: none;
+    
+    /* 폰트 및 텍스트 설정 */
+    color: red;
+    font-family: 'Pretendard', sans-serif;
+    font-weight: bold;
+    line-height: 1.2;
+    
+    /* ✅ 중요: 자동 줄바꿈 방지 (엔터 칠 때만 줄바꿈) */
+    white-space: pre; 
+    
+    padding: 10px; /* 터치 영역 확보를 위해 패딩 증가 */
+    margin: 0;
+    resize: none;
+    overflow: hidden;
+    z-index: 9999;
+    
+    /* iOS 등 모바일 기본 스타일 제거 */
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 4px;
+}
+
+
+/* =========================================
+   📱 모바일 반응형 대응 (max-width: 768px)
+   ========================================= */
+@media screen and (max-width: 768px) {
+    
+    /* 1. 전체 레이아웃 조정 */
+    .workspace {
+        position: relative; /* 자식 absolute 배치를 위해 */
+        flex-direction: column;
+        width: 100%;
+        height: calc(100vh - 50px); /* 헤더 제외 높이 */
+    }
+
+    /* 2. 우측 속성 패널 (모바일에서는 상단 고정) */
+    .property-panel {
+        order: -1;            
+        width: 100%;
+        height: auto;         
+        max-height: 120px;    
+        flex: none;           
+        border-left: none;
+        border-bottom: 1px solid var(--border);
+        padding: 10px;
+        background-color: var(--bg-panel);
+        z-index: 10;
+    }
+
+    /* 3. 캔버스 영역 */
+    .canvas-area {
+        width: 100%;
+        flex: 1;              
+        min-height: 0;        
+        padding: 10px;        
+        background-color: #1a1a24;
+        /* 툴바가 떠 있으므로 하단 여백 추가 (여유있게) */
+        padding-bottom: 150px; 
+    }
+
+    /* 4. 좌측 도구 모음 -> 🔥 플로팅 독(Floating Dock) 위치 */
+    .toolbar-left {
+        position: fixed;      /* absolute 대신 fixed 사용하여 스크롤시에도 고정 */
+        
+        /* ✅ 바닥에서 좀 더 띄움 (브라우저 하단바 간섭 방지) */
+        bottom: 30px;         
+        
+        /* 중앙 정렬 */
+        left: 50%;            
+        transform: translateX(-50%); 
+        
+        width: auto;          
+        max-width: 95%;       
+        height: 60px;         
+        
+        background: rgba(39, 41, 61, 0.95); 
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;  
+        box-shadow: 0 5px 20px rgba(0,0,0,0.5); 
+        
+        flex-direction: row;  
+        align-items: center;
+        justify-content: flex-start;
+        
+        padding: 0 15px;      
+        gap: 8px;             
+        
+        overflow-x: auto;     
+        overflow-y: hidden;
+        z-index: 2000;        
+        
+        -ms-overflow-style: none;  
+        scrollbar-width: none;  
+    }
+    
+    .toolbar-left::-webkit-scrollbar {
+        display: none; 
+    }
+
+    /* 5. 도구 아이콘 스타일 */
+    .tool-item {
+        width: auto;          
+        height: 40px;
+        background: transparent;
+        border: none;
+        margin: 0;
+        padding: 0;
+        
+        font-size: 0 !important; 
+        color: #a0a0a0;
+    }
+    
+    .tool-item:active {
+        transform: scale(0.95); 
+    }
+
+    /* 구분선 세로로 변경 */
+    .divider {
+        width: 1px;
+        height: 20px;
+        background: rgba(255,255,255,0.2);
+        margin: 0 5px;
+    }
+
+    /* 6. 상단 헤더 */
+    .top-bar {
+        padding: 0 10px;
+        height: 50px;
+    }
+
+    .logo { font-size: 14px; }
+    
+    /* ✅ 버튼 텍스트는 숨기고 아이콘만 표시 */
+    .file-actions button { 
+        padding: 0; 
+        width: 36px;  /* 터치하기 좋은 정사각형 크기 */
+        height: 36px;
+        font-size: 0 !important; /* 텍스트 숨김 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    /* 숨겨져 있던 아이콘(span)을 강제로 표시 */
+    .file-actions button span.material-icons-outlined { 
+        display: block !important; 
+        font-size: 20px !important; 
+        margin: 0;
+    }
+    
+    /* ✅ 해상도 선택 메뉴 다시 표시 */
+    .ratio-selector {
+        display: flex !important;
+        align-items: center;
+        margin: 0 auto 0 5px !important; /* 로고 옆에 배치 */
+        padding: 2px 8px;
+        background: #3e4050;
+        border-radius: 15px;
+        height: 30px;
+    }
+
+    /* 7. 줌 컨트롤러 위치 수정 (✅ 메뉴 바로 위 중앙에 위치) */
+    .zoom-controls {
+        position: fixed; /* 화면에 고정 */
+        
+        /* ✅ 메뉴(Toolbar) 바로 위에 위치하도록 계산 */
+        /* 메뉴 bottom(30px) + 메뉴 높이(60px) + 간격(10px) = 100px */
+        bottom: 100px; 
+        
+        /* ✅ 우측 정렬 해제하고 중앙 정렬로 변경 */
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        
+        background: rgba(39, 41, 61, 0.9);
+        padding: 5px 10px;
+        border-radius: 20px;
+        z-index: 2000; /* 메뉴와 동일한 레벨 */
+        width: max-content; /* 내용물 크기만큼만 */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+}

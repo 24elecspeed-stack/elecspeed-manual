@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gemini Watermark Remover</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0c0b09;
+      --surface:  #161410;
+      --border:   rgba(255,255,255,0.07);
+      --text:     #f0ece4;
+      --muted:    rgba(240,236,228,0.38);
+      --gold:     #d4a843;
+      --gold-dim: rgba(212,168,67,0.13);
+      --green:    #4cae78;
+      --green-dim:rgba(76,174,120,0.13);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', 'Courier New', monospace;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient glow */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 50% -10%, rgba(212,168,67,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 80% 90%,  rgba(212,168,67,0.04) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Dot grid */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none; z-index: 0;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 30%, transparent 80%);
+    }
+
+    /* ── Layout ── */
+    .page {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px;
+      gap: 40px;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; animation: fadeUp .7s ease both; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+    .eyebrow::before, .eyebrow::after {
+      content: '';
+      display: block;
+      width: 24px; height: 1px;
+      background: var(--gold); opacity: .5;
+    }
+
+    .title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(36px, 6vw, 60px);
+      font-weight: 500;
+      letter-spacing: .02em;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+    .title span { color: var(--gold); }
+
+    .subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .05em;
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 32px 64px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03);
+      animation: fadeUp .7s .1s ease both;
+    }
+
+    /* ── Drop zone ── */
+    .dropzone {
+      width: 100%;
+      border: 1.5px dashed rgba(212,168,67,.3);
+      border-radius: 12px;
+      padding: 52px 24px;
+      cursor: pointer;
+      transition: border-color .25s, transform .25s, background .25s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      background: transparent;
+      position: relative;
+      overflow: hidden;
+      -webkit-user-select: none; user-select: none;
+    }
+
+    /* Radial hover glow */
+    .dropzone::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(212,168,67,.06), transparent 70%);
+      opacity: 0; transition: opacity .3s;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: rgba(212,168,67,.7);
+      transform: translateY(-2px);
+    }
+    .dropzone:hover::before, .dropzone.dragover::before { opacity: 1; }
+    .dropzone.dragover { border-style: solid; background: var(--gold-dim); }
+
+    /* State variants */
+    .dropzone[data-state="loading"] { cursor: wait; }
+    .dropzone[data-state="done"]    { border-color: rgba(76,174,120,.6); background: var(--green-dim); }
+    .dropzone[data-state="error"]   { border-color: rgba(220,80,80,.5); }
+
+    /* ── Upload icon container ── */
+    .icon-wrap {
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(212,168,67,.2);
+      display: grid; place-items: center;
+      color: var(--gold);
+      transition: transform .3s, box-shadow .3s, background .3s, color .3s;
+      position: relative; z-index: 1;
+      flex-shrink: 0;
+    }
+    .dropzone:hover .icon-wrap {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(212,168,67,.15);
+    }
+    .dropzone[data-state="loading"] .icon-wrap {
+      animation: spin-icon 1s linear infinite;
+      background: rgba(212,168,67,.08);
+    }
+    .dropzone[data-state="done"] .icon-wrap {
+      background: var(--green-dim);
+      border-color: rgba(76,174,120,.3);
+      color: var(--green);
+    }
+    .icon-wrap svg { width: 26px; height: 26px; }
+
+    /* ── Queue badge ── */
+    .badge {
+      position: absolute;
+      top: -6px; right: -6px;
+      min-width: 20px; height: 20px;
+      padding: 0 5px;
+      border-radius: 10px;
+      background: var(--gold);
+      color: #0c0b09;
+      font-size: 10px;
+      font-weight: 700;
+      display: grid; place-items: center;
+      line-height: 1;
+    }
+    .badge[hidden] { display: none; }
+
+    /* ── Labels ── */
+    .drop-label {
+      font-size: 13px;
+      color: var(--text);
+      text-align: center;
+      position: relative; z-index: 1;
+      transition: color .3s;
+    }
+    .dropzone[data-state="loading"] .drop-label { color: var(--gold); }
+    .dropzone[data-state="done"]    .drop-label { color: var(--green); }
+
+    .drop-hint {
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--muted);
+      text-transform: uppercase;
+      position: relative; z-index: 1;
+      max-width: 260px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Tips row ── */
+    .tips {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .tip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+    .tip-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(212,168,67,.4);
+      flex-shrink: 0;
+    }
+
+    /* ── Gallery UI ── */
+    .gallery {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      z-index: 1;
+      margin-top: 10px;
+    }
+    .result-row {
+      display: flex;
+      gap: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 16px 32px rgba(0,0,0,.4);
+      animation: fadeUp .5s ease forwards;
+    }
+    .image-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .image-label {
+      font-size: 11px;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      text-align: center;
+      font-weight: 600;
+    }
+    .img-container {
+      position: relative;
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: #0a0908;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .img-container img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+    .img-container:hover img {
+      transform: scale(1.05);
+    }
+
+    /* Hidden file input */
+    #file { display: none; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+    }
+    @keyframes spin-icon {
+      0%   { transform: rotate(0deg);   }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .result-row { flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .card  { padding: 24px 20px; }
+      .title { font-size: 36px; }
+      .tips  { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<main class="page">
+
+  <header class="header">
+    <div class="eyebrow">AI 자동화 복붙코딩</div>
+    <h1 class="title">Watermark <span>Remover</span></h1>
+    <p class="subtitle">로컬 처리 · 서버 전송 없음 · 자동 저장</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Drop Zone -->
+    <div id="dropzone" class="dropzone" data-state="idle" role="button" tabindex="0"
+         aria-label="이미지 업로드 영역">
+
+      <!-- Icon -->
+      <div class="icon-wrap">
+        <!-- Upload icon (default / loading) -->
+        <svg id="iconUpload" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <!-- Queue badge -->
+        <span id="queueBadge" class="badge" hidden>0</span>
+      </div>
+
+      <div id="dropLabel" class="drop-label">클릭하거나 이미지를 드롭하세요</div>
+      <div id="dropHint"  class="drop-hint">JPG / PNG / WEBP</div>
+    </div>
+
+    <!-- Tip row -->
+    <div class="tips">
+      <div class="tip"><span class="tip-dot"></span>다중 파일 드롭 / 다중 선택 지원</div>
+      <div class="tip"><span class="tip-dot"></span>클릭 시 클립보드 이미지 자동 인식</div>
+      <div class="tip"><span class="tip-dot"></span>Ctrl+V 붙여넣기 지원</div>
+    </div>
+
+  </div><!-- /card -->
+
+  <!-- 🖼️ 결과 갤러리 영역 -->
+  <div id="gallery" class="gallery"></div>
+
+</main>
+
+<!-- Hidden file input (multiple) -->
+<input id="file" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+
+<script src="local_nanobanana.js"></script>
+</body>
+</html>

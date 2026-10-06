@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>최종 블로그 완성본 미리보기</title>
+    <link rel="stylesheet" href="final-view.css" />
+    <link rel="stylesheet" href="integration.css" />
+  </head>
+  <body>
+    <!-- 상단 툴바 -->
+    <header class="top-toolbar">
+      <div class="toolbar-left">
+        <span class="toolbar-logo">✨</span>
+        <div class="toolbar-info">
+          <span id="toolbarBadge" class="toolbar-badge">최종 완성본 (v1)</span>
+          <h1 id="toolbarTitle" class="toolbar-title">블로그 포스팅 미리보기</h1>
+        </div>
+      </div>
+
+      <div class="toolbar-actions">
+        <!-- 뷰 모드 전환 버튼 -->
+        <div class="view-toggle-group">
+          <button id="btnDesktopView" class="toggle-btn active" title="PC 화면 너비로 보기">💻 PC 뷰</button>
+          <button id="btnMobileView" class="toggle-btn" title="모바일 스마트폰 너비로 보기">📱 모바일 뷰</button>
+        </div>
+
+        <!-- AI 추가 수정/재제작 버튼 -->
+        <button id="btnOpenRevisionModal" class="btn btn-primary" title="추가 요청사항을 반영하여 AI로 다시 제작">
+          ✨ AI 추가 수정/재제작
+        </button>
+
+        <!-- 편집 모드 토글 -->
+        <button id="btnToggleEdit" class="btn btn-secondary" title="본문을 직접 클릭하여 텍스트 수정">
+          ✏️ 직접 수정
+        </button>
+
+        <!-- 소스코드 보기 -->
+        <button id="btnViewSource" class="btn btn-secondary" title="HTML 원문 소스코드 보기">
+          &lt;/&gt; HTML 소스
+        </button>
+
+        <!-- HTML 복사 -->
+        <button id="btnCopyHtml" class="btn btn-secondary">
+          📋 HTML 복사
+        </button>
+
+        <!-- HTML 파일 다운로드 -->
+        <button id="btnDownloadHtml" class="btn btn-accent">
+          💾 .html 다운로드
+        </button>
+      </div>
+    </header>
+
+    <!-- 메인 기사 컨테이너 -->
+    <main class="page-body">
+      <div id="articleContainer" class="article-container desktop-mode">
+        <!-- 기사 헤더 -->
+        <header class="article-header">
+          <div id="articleTags" class="article-tags"></div>
+          <h1 id="articleTitle" class="article-title">제목 로딩 중...</h1>
+          <div class="article-meta">
+            <span id="articleDate" class="meta-date">2026.09.10</span>
+            <span class="meta-divider">•</span>
+            <span id="articleImageCount" class="meta-images">이미지 0장</span>
+            <span class="meta-divider">•</span>
+            <span class="meta-author">딸깍 SNS</span>
+          </div>
+          <div id="articleSummaryCard" class="article-summary-card">
+            <span class="summary-icon">💡</span>
+            <div id="articleSummaryText" class="summary-text"></div>
+          </div>
+        </header>
+
+        <!-- 기사 본문 (HTML + 배치된 이미지 렌더링 영역) -->
+        <article id="articleContent" class="article-content">
+          <!-- 동적으로 생성된 완성 HTML과 이미지가 여기에 주입됩니다 -->
+        </article>
+
+        <!-- 기사 푸터 -->
+        <footer class="article-footer">
+          <div class="footer-cta">
+            <p>사용자의 메모와 첨부 사진을 바탕으로 AI가 작성한 글입니다. 게시 전에 내용을 확인해 주세요.</p>
+          </div>
+        </footer>
+      </div>
+    </main>
+
+    <!-- HTML 원문 소스코드 모달 -->
+    <div id="sourceModal" class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>HTML 소스코드</h3>
+          <button id="btnCloseModal" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="rawSourceTextarea" readonly spellcheck="false"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button id="btnCopySourceModal" class="btn btn-primary">소스코드 복사</button>
+          <button id="btnCloseModalBottom" class="btn btn-secondary">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 추가 요청사항 반영 (재제작) 모달 -->
+    <div id="revisionModal" class="modal-backdrop">
+      <div class="modal-card revision-modal-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-icon">✨</span>
+            <div>
+              <h3>AI 추가 요청사항 반영 (재제작)</h3>
+              <p class="modal-subtitle">이전 사진 비전 분석 결과를 유지하고, 피드백을 반영하여 본문과 사진 배치를 새롭게 재작성합니다.</p>
+            </div>
+          </div>
+          <button id="btnCloseRevisionModal" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="quick-chips-container">
+            <span class="chip-label">⚡ 빠른 요청 추천:</span>
+            <div class="quick-chips-list">
+              <button type="button" class="quick-chip" data-chip="문체를 조금 더 친근하고 생동감 있게 다듬어줘.">✍️ 친근한 문체</button>
+              <button type="button" class="quick-chip" data-chip="제품의 특장점과 프로모션 혜택 내용을 더 강조해줘.">⚡ 혜택/특장점 강조</button>
+              <button type="button" class="quick-chip" data-chip="소제목별로 핵심 요약 bullet point 목록을 추가해줘.">📌 핵심 요약 추가</button>
+              <button type="button" class="quick-chip" data-chip="서론과 결론을 더 간결하고 임팩트 있게 압축해줘.">✂️ 간결하게 압축</button>
+              <button type="button" class="quick-chip" data-chip="핵심 스펙 비교 요약 표를 본문에 추가해줘.">📊 스펙 요약표 추가</button>
+            </div>
+          </div>
+
+          <div class="input-group" style="margin-top: 14px;">
+            <label for="viewRevisionInput" class="input-label">추가 요청사항 / 수정 피드백</label>
+            <textarea
+              id="viewRevisionInput"
+              class="form-control textarea"
+              rows="4"
+              placeholder="예: 2번 소제목에 실사용 배터리 타임을 보강해줘, 4번 사진 설명을 좀 더 길게 해줘, 결론에 구매 팁을 넣어줘 등 자유롭게 적어주세요."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnSubmitViewRevision" class="btn btn-accent">
+            <span class="btn-icon">🚀</span>
+            수정 반영하여 다시 제작하기
+          </button>
+          <button id="btnCloseRevisionModalBottom" class="btn btn-secondary">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 재제작 진행 로딩 오버레이 -->
+    <div id="revisionLoadingOverlay" class="loading-overlay" style="display: none;">
+      <div class="loading-card">
+        <div class="spinner-pulse"></div>
+        <h3 id="overlayStatusTitle">AI가 추가 요청사항을 반영하여 글을 재작성하는 중입니다...</h3>
+        <p id="overlayStatusDesc">기존 사진 분석 결과를 유지하고 본문 구성 및 사진 배치를 새롭게 다듬고 있습니다.</p>
+      </div>
+    </div>
+
+    <!-- 알림 토스트 -->
+    <div id="toast" class="toast">알림 메시지</div>
+
+    <script src="strings.js"></script>
+    <script src="../error-localization.js"></script>
+    <script src="../ui-language.js"></script>
+    <script src="integration.js"></script>
+    <script src="final-view.js"></script>
+    <script src="page-bridge.js"></script>
+    <script src="english.js"></script>
+  </body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <!-- 모바일 반응형 뷰포트 설정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vrew Auto Sync Master</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3ba3e3; /* Vrew Blue */
+            --primary-hover: #2c8ac4;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --text-sub: #666;
+            --border: #e0e0e0;
+            --success: #00e676;
+        }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
+        }
+        .app-container { max-width: 800px; margin: 0 auto; }
+
+      
+        .header { 
+            text-align: center; 
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px; 
+        }
+        .header .logo { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
+            margin-bottom: 5px;
+        }
+        .header .logo .icon { 
+            font-size: 32px; 
+            color: var(--primary); 
+        }
+        .header .logo h1 { 
+            font-size: 24px; 
+            font-weight: 800; 
+            letter-spacing: -0.5px; 
+            margin: 0;
+        }
+        .header .version { 
+            font-size: 10px; 
+            background: linear-gradient(45deg, #3ba3e3, #2563eb); /* Vrew Blue Gradient */
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            vertical-align: middle; 
+            color: white;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+        .header .subtitle { 
+            color: var(--text-sub); 
+            font-size: 13px; 
+            margin-top: 5px; 
+        }
+
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { font-size: 18px; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px; }
+        
+        /* 업로드 그리드 (모바일 대응 포함) */
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .file-drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 30px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+        .file-drop-zone:hover, .file-drop-zone.dragover { border-color: var(--primary); background: #f0f9ff; }
+        .file-drop-zone.loaded { border-color: var(--success); background: #f0fff4; }
+        
+        .drop-icon { font-size: 40px; color: #ccc; margin-bottom: 10px; transition: color 0.2s; }
+        .file-drop-zone.loaded .drop-icon { color: var(--success); }
+        
+        .drop-text strong { display: block; font-size: 14px; margin-bottom: 5px; }
+        .drop-text span { 
+            font-size: 12px; 
+            color: #999; 
+            display: block;
+            transition: all 0.2s;
+        }
+        .file-drop-zone.loaded .drop-text span { 
+            color: var(--success); 
+            font-weight: 600; 
+            font-size: 13px;
+        }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .badge {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .preview-header-row { 
+            display: grid; 
+            grid-template-columns: 50px 2fr 80px 2fr; 
+            gap: 10px; 
+            padding: 10px; 
+            background: #f1f3f5; 
+            font-weight: bold; 
+            font-size: 13px; 
+            border-radius: 6px 6px 0 0; 
+        }
+        .preview-list { 
+            max-height: 300px; 
+            overflow-y: auto; 
+            border: 1px solid var(--border); 
+            border-top: none; 
+            border-radius: 0 0 6px 6px; 
+            background: white; 
+        }
+        .match-item { 
+            display: grid; 
+            grid-template-columns: 50px 2fr 80px 2fr; 
+            gap: 10px; 
+            padding: 10px; 
+            border-bottom: 1px solid #eee; 
+            font-size: 13px; 
+            align-items: center; 
+        }
+        .match-item:last-child { border-bottom: none; }
+        .match-item:hover { background: #f8f9fa; }
+        .match-item .name { 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap; 
+        }
+        .match-item .img-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .match-item .image-preview {
+            width: 80px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .empty-state { padding: 30px; text-align: center; color: #999; font-size: 13px; }
+
+        .action-area { text-align: center; margin-top: 30px; }
+        .btn-primary {
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 15px 40px;
+            font-size: 16px; 
+            font-weight: bold; 
+            border-radius: 50px; 
+            cursor: pointer;
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(83, 186, 255, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); background: var(--primary-hover); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .loading-overlay {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(255,255,255,0.9); 
+            z-index: 9999;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+        }
+        .loading-overlay.hidden { display: none; }
+        .spinner {
+            width: 40px; 
+            height: 40px; 
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary); 
+            border-radius: 50%;
+            animation: spin 1s linear infinite; 
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 모바일 반응형 스타일 */
+        @media screen and (max-width: 768px) {
+            body { padding: 10px; }
+            .upload-grid { grid-template-columns: 1fr; } /* 세로 배치 */
+            
+            .file-drop-zone {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                padding: 15px;
+                text-align: left;
+                min-height: 80px;
+            }
+            .drop-icon { margin-bottom: 0; font-size: 32px; }
+
+            .preview-header-row, .match-item {
+                grid-template-columns: 30px 1fr 50px 1fr;
+                gap: 5px;
+                font-size: 11px;
+                padding: 8px 5px;
+            }
+            .match-item .image-preview { width: 50px; height: 30px; }
+            .btn-primary { width: 100%; padding: 14px; font-size: 15px; }
+        }
+    </style>
+    <script src="default_js/jszip.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 1. 헤더 영역 -->
+        <header class="header">
+            <div class="logo">
+                <span class="material-icons-outlined icon">movie_creation</span>
+                <h1>Vrew Auto Sync <span class="version">Pro</span></h1>
+            </div>
+            <p class="subtitle">자막 파일과 이미지를 매칭하여 Vrew 프로젝트 파일을 생성합니다.</p>
+        </header>
+
+        <main class="workspace">
+            <!-- 파일 업로드 섹션 -->
+            <section class="card upload-section">
+                <h2>📂 파일 불러오기 (클릭 또는 드래그)</h2>
+                <div class="upload-grid">
+                    <!-- 대본(TXT) 폴더 업로드 -->
+                    <div class="file-drop-zone" id="drop-zone-text">
+                        <input type="file" id="textFolder" multiple hidden accept=".txt">
+                        <span class="material-icons-outlined drop-icon">description</span>
+                        <div class="drop-text">
+                            <strong>대본(TXT) 폴더 (내용 읽기)</strong>
+                            <span id="label-text">폴더 선택 / Ctrl+클릭으로 붙여넣기</span>
+                        </div>
+                    </div>
+
+                    <!-- 이미지 폴더 업로드 -->
+                    <div class="file-drop-zone" id="drop-zone-image">
+                        <input type="file" id="imageFolder" multiple hidden accept="image/*">
+                        <span class="material-icons-outlined drop-icon">image</span>
+                        <div class="drop-text">
+                            <strong>이미지(Images) 폴더 (자동 영문 변환)</strong>
+                            <span id="label-image">폴더 선택</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 프로젝트 설정 섹션 -->
+            <section class="card path-section">
+                <div class="section-header">
+                    <h2>💾 프로젝트 설정</h2>
+                </div>
+                
+                <div class="input-group">
+                    <label>⏱️ 기본 싱크 조절 (초) [대본 길이 + n초]</label>
+                    <input type="number" id="sceneDuration" value="0" step="0.1">
+                </div>
+
+
+
+                <div class="input-group">
+                    <label>✂️ 문장 자동 분할 (한 장면당 최대 글자 수)</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="checkbox" id="useAutoSplit" checked style="width:20px; height:20px;">
+                        <label for="useAutoSplit" style="margin:0; font-weight:normal;">사용함</label>
+                        <input type="number" id="maxChars" value="20" style="width:80px;" title="이 글자 수가 넘어가면 적절한 위치에서 자릅니다.">
+                        <span>자</span>
+                    </div>
+                </div>
+
+
+
+                <div class="input-group">
+                    <label>📝 프로젝트 파일 이름</label>
+                    <input type="text" id="projectName" placeholder="예: MyVrewProject" value="MyVrewProject">
+                </div>
+            </section>
+
+            <!-- 미리보기 섹션 -->
+            <section class="card status-section">
+                <div class="status-header">
+                    <h2>📊 매칭 미리보기</h2>
+                    <span id="match-count" class="badge">대기 중</span>
+                </div>
+                
+                <div class="preview-header-row">
+                    <span>No.</span>
+                    <span>대본 내용 (미리보기)</span>
+                    <span>시간</span>
+                    <span>이미지 파일</span>
+                </div>
+                
+                <div class="preview-list" id="previewList">
+                    <div class="empty-state">파일을 불러오면 매칭 목록이 표시됩니다.</div>
+                </div>
+            </section>
+
+            <!-- 실행 버튼 영역 -->
+            <div class="action-area">
+                <button id="processBtn" class="btn-primary">
+                    <span class="material-icons-outlined">download</span>
+                    Vrew 프로젝트 파일(.vrew) 생성
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loadingText">처리 중...</p>
+    </div>
+
+    <script src="vrew_sync.js"></script>
+</body>
+</html>

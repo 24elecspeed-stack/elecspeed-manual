@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>딸깍 SNS</title>
+    <link rel="stylesheet" href="sidepanel.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div class="hero-heading">
+          <div class="hero-title-row">
+            <h1>딸깍 SNS</h1>
+            <div class="language-toolbar">
+              <label for="uiLanguage">🌐 <span>화면 언어 / Language</span></label>
+              <select id="uiLanguage" aria-label="UI language">
+                <option value="auto">자동 / Browser default</option>
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+          </div>
+          <p class="meta">무료 AI 글쓰기 · 네이버 블로그·카페 · 티스토리 · Blogger · 인스타그램 · Threads</p>
+        </div>
+        <div class="hero-actions">
+          <button id="exportInputsButton" class="ghost" type="button">설정 내보내기</button>
+          <button id="importInputsButton" class="ghost" type="button">설정 가져오기</button>
+          <button id="toggleQuickGuideButton" class="ghost" type="button">아주 쉬운 사용법</button>
+          <button id="bindTabButton" class="ghost bind-tab-button" type="button">① 현재 탭 연결하기</button>
+        </div>
+      </header>
+      <input type="file" id="importInputsFileInput" accept=".json" style="display: none;">
+
+      <section class="card context-card">
+        <p class="field-label">연결 상태</p>
+        <p id="contextStatus" class="status">현재 연결된 네이버 블로그·카페·티스토리 또는 Google Blogger 글쓰기 페이지를 확인하는 중입니다.</p>
+        <p id="connectedTabMeta" class="meta hidden"></p>
+        <div class="grid-2 top-gap">
+          <div>
+            <label class="field-group" for="naverBlogIdInput">내 네이버 블로그 ID (선택)</label>
+            <input id="naverBlogIdInput" type="text" placeholder="예: myblogid">
+          </div>
+          <div>
+            <label class="field-group" for="naverCategoryNoInput">카테고리 번호 (선택)</label>
+            <input id="naverCategoryNoInput" type="text" placeholder="비워두면 기본 카테고리">
+          </div>
+        </div>
+        <p class="meta">블로그 ID를 입력해두면, 매번 직접 글쓰기 화면을 열지 않고 아래 버튼으로 바로 이동 후 연결할 수 있습니다.</p>
+        <button id="autoOpenNaverWriteButton" class="ghost" type="button">🚀 내 블로그 글쓰기창 자동으로 열고 연결하기</button>
+        <label class="field-group top-gap" for="postingModeInput">작성 모드</label>
+        <select id="postingModeInput">
+          <option value="blog">블로그 · 카페 · 티스토리 · Google Blogger · AI로 글/이미지 생성</option>
+          <option value="photo">블로그 · 카페 · 티스토리 · Google Blogger · 내 사진으로 글쓰기</option>
+          <option value="instagram">Instagram (이미지 1~10장 · 공유 전까지)</option>
+            <option value="threads">Threads (글 · 이미지 · 게시 전까지)</option>
+        </select>
+      </section>
+
+      <section id="photoWriterCard" class="hidden">
+        <iframe id="photoWriterFrame" title="내 사진으로 글쓰기" style="display:block;width:100%;height:120px;border:0;"></iframe>
+      </section>
+
+      <section id="threadsCard" class="card hidden">
+        <label class="field-group" for="threadsWritingMode">작성 모드</label>
+        <select id="threadsWritingMode"><option value="ai">AI로 글/이미지 생성</option><option value="photos">내 사진으로 글쓰기</option></select>
+        <p id="threadsPhotoHint" class="meta hidden"></p>
+        <p class="field-label">Threads 게시물 준비</p>
+        <p class="meta">로그인한 Threads 홈·프로필에서 현재 탭을 연결하세요. 글만 입력하거나 이미지 1~10장을 함께 넣을 수 있습니다. 게시 버튼은 직접 누릅니다.</p>
+        <label class="field-group" for="threadsProvider">글 작성 AI</label>
+        <select id="threadsProvider"><option value="gemini">Gemini</option><option value="chatgpt">ChatGPT</option><option value="claude">Claude</option></select>
+        <label class="field-group" for="threadsImageProvider">이미지 생성 AI</label>
+        <select id="threadsImageProvider"><option value="gemini">Gemini</option><option value="chatgpt">ChatGPT</option></select>
+        <label class="field-group" for="threadsPostCount">글 구성</label>
+        <select id="threadsPostCount">
+          <option value="1">짧은 글 (1개)</option><option value="2">긴 글 (2개 연결)</option><option value="3">긴 글 (3개 연결)</option><option value="4">긴 글 (4개 연결)</option><option value="5">긴 글 (5개 연결)</option><option value="6">긴 글 (6개 연결)</option><option value="7">긴 글 (7개 연결)</option><option value="8">긴 글 (8개 연결)</option><option value="9">긴 글 (9개 연결)</option><option value="10">긴 글 (10개 연결)</option>
+        </select>
+        <p class="meta">긴 글은 ‘스레드에 추가’로 연결합니다. 각 글은 500자 이하이며, 이미지는 첫 번째 글에 첨부합니다. 구성 변경 후 글을 다시 생성하세요.</p>
+        <label class="field-group" for="threadsTopic">주제와 요청사항</label>
+        <textarea id="threadsTopic" placeholder="예: 오늘 배운 생산성 팁, 친근하고 짧게"></textarea>
+        <label class="field-group" for="threadsPostFormat">게시물 구성</label>
+        <select id="threadsPostFormat"><option value="standard">일반 이미지 게시물</option><option value="cardnews">카드뉴스 (장별 문구 + 이미지)</option></select>
+        <p id="threadsCardnewsHint" class="meta hidden">카드뉴스는 1~10장으로 구성하며 첫 번째 글에 첨부합니다. 4장 이상은 표지 → 핵심 내용 → 예시 → 마무리 순서이며, 1~3장은 내용을 합칩니다. 장별 문구를 수정할 수 있으며, 생성 후 이미지 속 오탈자를 확인하세요.</p>
+        <label class="field-group" for="threadsImageStyle">이미지 스타일</label>
+        <textarea id="threadsImageStyle" rows="2" placeholder="예: 파스텔톤, 깔끔한 카드뉴스, 큰 제목과 간결한 설명"></textarea>
+        <label class="field-group" for="threadsCount">이미지 개수</label>
+        <select id="threadsCount"><option value="0">글만 작성</option><option value="1">1장</option><option value="2">2장</option><option value="3">3장</option><option value="4">4장</option><option value="5">5장</option><option value="6">6장</option><option value="7">7장</option><option value="8">8장</option><option value="9">9장</option><option value="10">10장</option></select>
+        <button id="threadsGenerate" class="primary top-gap" type="button">글 · 이미지 프롬프트 생성</button>
+        <label class="field-group" for="threadsText">게시할 글 (직접 수정 가능)</label>
+        <textarea id="threadsText" rows="7"></textarea>
+        <p id="threadsTextCount" class="meta">0 / 500자</p>
+        <div id="threadsContinuation"></div>
+        <div id="threadsPrompts"></div>
+        <button id="threadsGenerateImages" class="primary" type="button">이미지 생성</button>
+        <div id="threadsFileArea">
+          <label class="field-group" for="threadsFiles">내 이미지 추가 (JPEG·PNG·WebP, 파일당 8MB 이하)</label>
+          <input id="threadsFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        </div>
+        <div id="threadsGallery" class="instagram-gallery top-gap"></div>
+        <p class="meta">글당 500자, 최대 10개 연결·이미지 최대 10장을 지원합니다. 글·프롬프트는 저장되며 이미지는 패널을 닫기 전에 다운로드하세요.</p>
+        <p id="threadsStatus" class="status" role="status"></p>
+      </section>
+      <section id="instagramCard" class="card hidden">
+        <label class="field-group" for="instagramWritingMode">작성 모드</label>
+        <select id="instagramWritingMode"><option value="ai">AI로 글/이미지 생성</option><option value="photos">내 사진으로 글쓰기</option></select>
+        <p id="instagramPhotoHint" class="meta hidden"></p>
+        <p class="field-label">Instagram 게시물 준비</p>
+        <p class="meta">선택한 수의 이미지와 캡션을 한 게시물에 입력한 뒤 공유 직전에 멈춥니다. Instagram에 로그인하고 현재 탭을 연결하세요. 이미 작성 중인 게시물은 덮어쓰지 않습니다.</p>
+        <label class="field-group" for="instagramPostFormat">게시물 구성</label>
+        <select id="instagramPostFormat">
+          <option value="standard">일반 이미지 게시물</option>
+          <option value="cardnews">카드뉴스 (장별 문구 + 이미지)</option>
+        </select>
+        <p id="instagramCardnewsHint" class="meta hidden">4장 이상 권장: 표지 → 핵심 내용 → 예시 → 마무리. 1~3장은 내용을 합쳐 구성합니다. 생성 전 장별 문구와 프롬프트를 수정할 수 있습니다. AI가 이미지 안에 글자를 그리므로 생성 후 오탈자를 확인하세요.</p>
+        <label class="field-group" for="instagramImageCount">① 먼저 생성할 이미지 개수를 선택하세요</label>
+        <select id="instagramImageCount">
+          <option value="1">1장</option><option value="2">2장</option><option value="3">3장</option><option value="4">4장</option><option value="5">5장</option>
+          <option value="6">6장</option><option value="7">7장</option><option value="8">8장</option><option value="9">9장</option><option value="10">10장</option>
+        </select>
+        <p class="meta" data-social-ai-only>캡션 생성 시 선택한 개수만큼 서로 다른 이미지 프롬프트도 함께 만듭니다.</p>
+        <label class="field-group" for="instagramProvider">캡션 작성 AI</label>
+        <select id="instagramProvider"><option value="gemini">Gemini</option><option value="chatgpt">ChatGPT</option><option value="claude">Claude</option></select>
+        <label class="field-group" for="instagramImageProvider">이미지 생성 AI</label>
+        <select id="instagramImageProvider"><option value="gemini">Gemini</option><option value="chatgpt">ChatGPT</option></select>
+        <label class="field-group" for="instagramTopic">주제와 요청사항</label>
+        <textarea id="instagramTopic" placeholder="예: 초보자를 위한 AI 활용 팁, 친근한 말투"></textarea>
+        <label class="field-group" for="instagramImageStyle">이미지 스타일 (선택 · 캡션 생성 전에 설정)</label>
+        <textarea id="instagramImageStyle" rows="3" placeholder="예: 실사 사진, 자연광, 따뜻한 색감 / 파스텔 수채화 / 깔끔한 3D 일러스트"></textarea>
+        <p class="meta">모든 이미지별 프롬프트에 반영합니다. 비워두면 주제에 맞게 정합니다. 스타일을 바꾼 뒤에는 캡션을 다시 생성하세요. 기존 이미지에는 자동 반영되지 않습니다.</p>
+        <div class="button-row single top-gap">
+          <button id="instagramGenerateCaption" class="primary" type="button">캡션 생성</button>
+        </div>
+        <label class="field-group" for="instagramCaption">캡션 · 해시태그 (직접 수정 가능)</label>
+        <textarea id="instagramCaption" rows="8" placeholder="게시할 캡션을 입력하거나 생성하세요."></textarea>
+        <p id="instagramCount" class="meta">0 / 2,200자</p>
+        <p class="field-label" data-social-ai-only>② 장별 구성 · 이미지 프롬프트</p>
+        <p id="instagramPromptMeta" class="meta"></p>
+        <div id="instagramPromptList"></div>
+        <label class="field-group" for="instagramTemplateFile">참고할 템플릿 이미지 (선택)</label>
+        <input id="instagramTemplateFile" type="file" accept="image/jpeg,image/png,image/webp">
+        <div id="instagramTemplatePreview" class="hidden">
+          <img id="instagramTemplateThumbnail" alt="등록한 디자인 템플릿" style="width: 100%; max-height: 180px; object-fit: contain;">
+          <p id="instagramTemplateName" class="meta"></p>
+          <button id="instagramTemplateRemove" class="ghost" type="button">템플릿 제거</button>
+        </div>
+        <label class="field-group" for="instagramTemplateInstructions">템플릿 반영 요청</label>
+        <textarea id="instagramTemplateInstructions" rows="2" placeholder="예: 상단 제목 배치와 배경색은 유지하고 사진과 문구는 이번 주제로 변경"></textarea>
+        <p class="meta" data-social-ai-only>JPEG·PNG·WebP, 8MB 이하. 일반 이미지·카드뉴스 생성과 이미지별 재생성 시 현재 템플릿을 AI에 첨부합니다. 게시 이미지로 추가되지는 않습니다. 템플릿 파일은 패널을 닫으면 다시 등록해야 합니다.</p>
+        <label class="field-group" for="instagramImagePrompt">모든 이미지에 적용할 추가 요청 (선택)</label>
+        <textarea id="instagramImagePrompt" placeholder="예: 따뜻한 색감, 밝은 배경"></textarea>
+        <div class="button-row top-gap">
+          <button id="instagramGenerateImage" class="primary" type="button">이미지 1장 생성</button>
+          <button id="instagramGenerateAndInsert" class="primary" type="button">생성 후 자동 입력 (공유 안 함)</button>
+        </div>
+        <button id="instagramStopGeneration" class="ghost top-gap" type="button" disabled>현재 이미지 완료 후 중지</button>
+        <div id="instagramFileArea">
+          <label class="field-group" for="instagramFile">내 이미지 추가 (한 장씩 또는 여러 장 · 파일당 8MB 이하)</label>
+          <input id="instagramFile" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+          <p class="meta">기존 이미지 뒤에 추가됩니다(총 10장까지). 수동 추가는 AI 생성 없이 가능하며, 비율이 맞지 않으면 사진을 자르지 않고 흰 여백을 넣습니다. 기존 한 장을 바꾸려면 아래 ‘파일 교체’를 사용하세요.</p>
+        </div>
+        <p class="field-label top-gap">③ 생성 이미지 수정 · 관리</p>
+        <div id="instagramPreview" class="instagram-gallery" aria-label="게시 이미지 순서"></div>
+        <p id="instagramImageMeta" class="meta"></p>
+        <p id="instagramStatus" class="status" role="status" aria-live="polite">수동 이미지는 비율 제한 없이 추가할 수 있습니다. 게시 전 AI 레이블 등 설정도 직접 확인하세요.</p>
+      </section>
+
+      <section class="card" data-blog-only>
+        <p class="field-label">초안 입력</p>
+        <label class="field-group" for="draftModeInput">초안 작성 방식</label>
+        <select id="draftModeInput">
+          <option value="manual">사용자 입력 기준 블로그 초안 만들기</option>
+          <option value="naver-search">네이버 검색 결과를 참고해서 초안 만들기</option>
+          <option value="section-blog">네이버 블로그 서비스의 검색 결과를 참고해서 초안 만들기</option>
+        </select>
+        <p class="meta">주제와 조건을 직접 입력하는 방식, 기존 네이버 블로그 검색 결과를 참고하는 방식, 네이버 검색 결과를 참고하는 방식 중 하나를 고를 수 있습니다.</p>
+
+        <div id="manualDraftFields" class="draft-mode-fields top-gap">
+          <label class="field-group" for="topicInput">주제</label>
+          <textarea id="topicInput" placeholder="예: 초보자를 위한 생성형 AI 업무 활용법"></textarea>
+
+          <div class="grid-2 top-gap">
+            <div>
+              <label class="field-group" for="audienceInput">대상 독자</label>
+              <input id="audienceInput" type="text" placeholder="예: 1인 사업자, 마케터">
+            </div>
+            <div>
+              <label class="field-group" for="keywordsInput">핵심 키워드</label>
+              <input id="keywordsInput" type="text" placeholder="쉼표로 구분">
+            </div>
+          </div>
+        </div>
+
+        <div id="naverSearchResearchFields" class="draft-mode-fields top-gap hidden">
+          <div class="grid-2">
+            <div>
+              <label class="field-group" for="naverSearchKeywordInput">검색 키워드</label>
+              <input id="naverSearchKeywordInput" type="text" placeholder="예: 가성비 노트북">
+            </div>
+            <div>
+              <label class="field-group" for="naverSearchReferenceCountInput">참고 글 개수</label>
+              <select id="naverSearchReferenceCountInput">
+                <option value="1">1개</option>
+                <option value="2">2개</option>
+                <option value="3">3개</option>
+                <option value="4">4개</option>
+                <option value="5">5개</option>
+                <option value="6">6개</option>
+                <option value="7">7개</option>
+                <option value="8">8개</option>
+              </select>
+            </div>
+          </div>
+          <p class="meta">선택한 검색 결과의 상위 글 제목 패턴, 검색 의도, 자주 다루는 포인트를 참고해 새 초안을 만듭니다.</p>
+        </div>
+
+        <label class="field-group top-gap" for="draftRequirementsInput">추가 요청사항</label>
+        <textarea id="draftRequirementsInput" placeholder="예: 초보자 눈높이로 설명, 가격 비교 표 포함, 과장 표현 제외"></textarea>
+
+        <div class="grid-2 top-gap">
+          <div>
+            <label class="field-group" for="toneInput">톤</label>
+            <select id="toneInput">
+              <option value="friendly">친근한 정보형</option>
+              <option value="expert">전문가형</option>
+              <option value="review">후기형</option>
+              <option value="story">스토리형</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-group" for="lengthInput">분량</label>
+            <select id="lengthInput">
+              <option value="short">짧게</option>
+              <option value="medium">보통</option>
+              <option value="long">길게</option>
+              <option value="custom">글자 수 직접 입력</option>
+            </select>
+            <div id="customLengthGroup" class="hidden">
+              <label class="field-group top-gap" for="customLengthInput">목표 글자 수 (공백 제외)</label>
+              <input id="customLengthInput" type="number" min="500" max="10000" step="100" value="2000">
+              <p class="meta">500~10,000자 · 목표 글자 수의 ±10% 범위로 작성합니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2 top-gap">
+          <div>
+            <label class="field-group" for="articleTypeInput">글 유형</label>
+            <select id="articleTypeInput">
+              <option value="auto">주제에 맞게 자동 선택</option>
+              <option value="information">정보 정리형</option>
+              <option value="review">사용 후기형</option>
+              <option value="comparison">비교 분석형</option>
+              <option value="howto">단계별 사용법형</option>
+              <option value="place">장소·방문 리뷰형</option>
+              <option value="story">경험 스토리형</option>
+              <option value="checklist">체크리스트형</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-group" for="formatPresetInput">서식 프리셋</label>
+            <select id="formatPresetInput">
+              <option value="auto">글 유형에 맞게 자동 선택</option>
+              <option value="clean">깔끔한 정보형</option>
+              <option value="magazine">매거진형</option>
+              <option value="review">후기 카드형</option>
+              <option value="comparison">비교 강조형</option>
+              <option value="checklist">체크리스트형</option>
+              <option value="emotional">감성 스토리형</option>
+            </select>
+          </div>
+        </div>
+        <p class="meta">글 유형은 내용의 전개 방식을, 서식 프리셋은 강조 블록과 시각 구성을 결정합니다.</p>
+
+        <div class="template-color-control top-gap">
+          <label class="field-group" for="templateAccentColorInput">템플릿 강조색</label>
+          <div class="template-color-row">
+            <input id="templateAccentColorInput" type="color" value="#7d9463" aria-label="템플릿 강조색 선택">
+            <button id="resetTemplateColorButton" class="ghost" type="button">프리셋 기본색 사용</button>
+          </div>
+          <p id="templateColorHint" class="meta">소제목, 강조 상자와 링크에 적용됩니다.</p>
+        </div>
+
+        <div class="grid-2 top-gap">
+          <div>
+            <label class="field-group" for="textProviderInput">글 생성 AI</label>
+            <select id="textProviderInput">
+              <option value="gemini">Gemini</option>
+              <option value="chatgpt">ChatGPT</option>
+              <option value="claude">Claude</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-group" for="imageProviderInput">이미지 준비</label>
+            <select id="imageProviderInput">
+              <option value="gemini">Gemini 이미지 생성</option>
+              <option value="chatgpt">ChatGPT 이미지 생성</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="field-group top-gap" for="chatSessionModeInput">AI 채팅 모드</label>
+        <select id="chatSessionModeInput">
+          <option value="new-chat">새 채팅</option>
+          <option value="temporary">임시채팅</option>
+        </select>
+        <p class="meta">지원되는 AI 화면에서는 임시채팅을 우선 사용하고, 찾지 못하면 일반 새 채팅으로 이어집니다.</p>
+
+        <label class="field-group top-gap" for="autoImageCountInput">생성할 이미지 개수</label>
+        <select id="autoImageCountInput"><option value="auto">자동</option></select>
+        <p id="autoImageCountHint" class="meta"></p>
+        <p class="meta">초안 작성 전에 선택하면 해당 개수의 이미지 프롬프트를 함께 만듭니다. 초안 작성 후 개수를 늘리면 부족한 프롬프트는 자동으로 보충합니다.</p>
+
+        <div class="button-row top-gap">
+          <button id="draftButton" class="primary step-action-btn" type="button">② 초안 작성</button>
+          <button id="copyHtmlButton" class="ghost" type="button">HTML 복사</button>
+        </div>
+        <div class="button-row top-gap single">
+          <button id="clearResultsButton" class="danger" type="button">결과 초기화</button>
+        </div>
+        <p id="statusText" class="status top-gap">대기 중</p>
+      </section>
+
+      <section class="card" data-blog-only>
+        <div class="section-header">
+          <p class="field-label">초안 미리보기</p>
+          <button id="openDraftPreviewButton" class="ghost inline-action" type="button">수정하기</button>
+        </div>
+        <div id="draftEmpty" class="empty-state">아직 작성된 초안이 없습니다.</div>
+        <div id="draftView" class="hidden">
+          <h2 id="draftTitle" class="preview-title"></h2>
+          <p id="draftSummary" class="summary"></p>
+          <div id="tagList" class="tag-list"></div>
+          <div id="draftPreview" class="preview"></div>
+        </div>
+      </section>
+
+      <section class="card" data-blog-only>
+        <p class="field-label">자동 이미지 생성</p>
+        <p class="meta">피드백이 반영된 최신 초안을 기준으로 이미지 위치와 프롬프트를 사용해 자동으로 이미지를 생성합니다.</p>
+        <label class="field-group top-gap" for="autoImageStyleInput">이미지 유형</label>
+        <select id="autoImageStyleInput">
+          <option value="standard">일반 블로그 이미지</option>
+          <option value="info-slide">정보 슬라이드/카드뉴스형 (한글 텍스트 포함)</option>
+          <option value="mixed">혼합형 (대표 이미지 + 정보 슬라이드)</option>
+        </select>
+        <p id="autoImageStyleHint" class="meta">소재와 분위기를 시각적으로 표현합니다.</p>
+        <label class="field-group top-gap" for="autoImageRequirementsInput">자동 이미지 요구사항</label>
+        <textarea id="autoImageRequirementsInput" placeholder="예: 따뜻한 우드톤, 핵심 키워드가 잘 보이는 카드뉴스 인포그래픽 형태"></textarea>
+        <label class="field-group top-gap" for="autoImageReferenceFileInput">필수 참고 이미지</label>
+        <input id="autoImageReferenceFileInput" type="file" accept="image/*">
+        <div id="autoImageReferencePreview" class="reference-image-preview hidden">
+          <img id="autoImageReferenceThumbnail" alt="필수 참고 이미지 미리보기">
+          <div class="reference-image-info">
+            <p id="autoImageReferenceName" class="image-meta"></p>
+            <button id="removeAutoImageReferenceButton" class="ghost inline-action" type="button">참고 이미지 제거</button>
+          </div>
+        </div>
+        <label class="field-group top-gap" for="autoImageReferencePromptInput">참고 이미지 반영 프롬프트</label>
+        <textarea id="autoImageReferencePromptInput" placeholder="예: 첨부한 제품 이미지를 반드시 중심 소재로 사용하고, 색상과 형태를 유지해 주세요."></textarea>
+        <div class="button-row top-gap single">
+          <button id="autoImageButton" class="primary step-action-btn" type="button">③ 자동 이미지 생성</button>
+        </div>
+      </section>
+
+      <section class="card" data-blog-only>
+        <p class="field-label">이미지 갤러리</p>
+        <div class="button-row single">
+          <button id="clearImagesButton" class="danger" type="button">이미지 비우기</button>
+        </div>
+        <div id="imageGallery" class="image-gallery top-gap"></div>
+      </section>
+
+      <section class="card">
+        <p class="field-label">최종 입력</p>
+        <div class="button-row single top-gap final-input-actions">
+          <button id="bindTabNearInsertButton" class="ghost bind-tab-button final-bind-button" type="button">① 현재 탭 연결하기</button>
+          <button id="insertButton" class="primary step-action-btn" type="button">④ 연결된 글쓰기창에 넣기</button>
+        </div>
+        <pre id="rawOutput" class="raw-output hidden"></pre>
+      </section>
+
+    </main>
+
+    <!-- Image Zoom Modal -->
+    <div id="imageModal" class="modal hidden">
+      <span class="modal-close" id="modalClose">&times;</span>
+      <img class="modal-content" id="modalImage" />
+      <div id="modalCaption" class="modal-caption"></div>
+    </div>
+
+    <!-- 네이버 글쓰기 탭 미연결 안내 모달 팝업 -->
+    <div id="connectGuideModal" class="modal hidden" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.5);">
+      <div class="card" style="max-width: 320px; width: 90%; text-align: center; padding: 24px 18px; border-radius: 12px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+        <div style="font-size: 38px; margin-bottom: 8px;">📌</div>
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #191919;">네이버 글쓰기 창 미연결</h3>
+        <p style="font-size: 12.5px; color: #666; line-height: 1.5; margin-bottom: 18px;">
+          네이버 블로그·카페·티스토리 또는 Google Blogger 글쓰기 페이지가 연동되지 않았습니다.<br>
+          글쓰기 창으로 이동 후 <strong>'현재 탭 연결하기'</strong>를 누르세요.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button id="modalOpenNaverBtn" class="ghost" type="button" style="width: 100%; padding: 10px; border: 1.5px solid #00c73c; color: #008a29; font-weight: 800; border-radius: 8px; font-size: 13.5px; cursor: pointer;">
+            🌐 1. 네이버 블로그 접속하기
+          </button>
+          
+          <div style="background-color: #e6f7ed; border: 1.5px solid #b7eb8f; border-radius: 8px; padding: 10px; text-align: center;">
+            <p style="font-size: 13px; font-weight: 800; color: #008a29; margin: 0;">
+              ✍️ 2. 접속 후 화면에서 '글쓰기' 클릭
+            </p>
+          </div>
+
+          <button id="modalBindTabBtn" class="primary step-action-btn" type="button" style="width: 100%; padding: 10px; font-weight: 800; border-radius: 8px; font-size: 13.5px;">
+            🔗 3. ① 현재 탭 연결하기
+          </button>
+
+          <button id="modalCloseGuideBtn" class="ghost" type="button" style="width: 100%; padding: 6px; color: #888; border-radius: 6px;">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 처음 사용하는 분께 안내 모달 팝업 -->
+    <div id="firstUseNoticeModal" class="modal hidden" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.6); z-index: 10004;">
+      <div class="card first-use-dialog" role="dialog" aria-modal="true" aria-labelledby="firstUseNoticeTitle">
+        <div class="first-use-header">
+          <span style="font-size: 26px;">👋</span>
+          <h3 id="firstUseNoticeTitle" style="font-size: 16.5px; font-weight: 800; color: #191919; margin: 0;">처음 사용하는 분께 꼭 드리는 안내</h3>
+          <button id="modalCloseFirstUseBtn" class="ghost first-use-close" type="button" aria-label="닫기" title="닫기">×</button>
+        </div>
+        <div class="first-use-body">
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <p style="font-size: 13px; font-weight: 700; color: #15803d; margin: 0; line-height: 1.45;">
+            🔑 본인이 크롬에서 로그인해 둔 AI 계정(Gemini / ChatGPT / Claude)을 그대로 연동하여 작동합니다.
+          </p>
+        </div>
+
+        <p style="font-size: 12.5px; color: #4b5563; line-height: 1.6; margin-bottom: 14px;">
+          별도의 유료 AI API 키 구매 없이, 로그인된 Gemini·ChatGPT·Claude 웹 화면으로 글을 작성합니다. 이미지 생성은 Gemini 또는 ChatGPT에서 진행합니다.
+        </p>
+
+        <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 18px;">
+          <p style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 6px;">📌 필수 준비 사항</p>
+          <ul style="font-size: 12px; color: #4b5563; padding-left: 18px; line-height: 1.65; margin: 0;">
+            <li><strong>AI 웹사이트 로그인:</strong> 선택한 Gemini, ChatGPT 또는 Claude에 먼저 로그인되어 있어야 합니다.</li>
+            <li><strong>글쓰기창 연결:</strong> 네이버 블로그·카페·티스토리 또는 Google Blogger 글쓰기 페이지를 열고 <em>'현재 탭 연결하기'</em>를 눌러주세요.</li>
+            <li><strong>1시간 무료 이용권 받기:</strong> 상단 버튼으로 1시간 무료 이용권을 받으면 즉시 시작할 수 있습니다.</li>
+          </ul>
+        </div>
+
+        </div>
+        <div class="first-use-actions" style="display: flex; gap: 8px;">
+          <button id="modalOpenGuideBtn" class="ghost" type="button" style="flex: 1; padding: 10px; border: 1px solid #d1d5db; color: #374151; font-weight: 700; border-radius: 6px; cursor: pointer;">💡 사용법 보기</button>
+          <button id="modalConfirmFirstUseBtn" class="primary" type="button" style="flex: 1.2; padding: 10px; font-weight: 700; border-radius: 6px; cursor: pointer;">네, 확인했어요!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 아주 쉬운 사용법 안내 모달 팝업 -->
+    <div id="quickGuideModal" class="modal hidden" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.6); z-index: 10001;">
+      <div class="card" style="max-width: 350px; width: 92%; max-height: 85vh; overflow-y: auto; padding: 22px 18px; border-radius: 14px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,0.25); text-align: left;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 24px;">💡</span>
+            <h3 style="font-size: 16.5px; font-weight: 800; color: #191919; margin: 0;">아주 쉬운 사용법 가이드</h3>
+          </div>
+          <button id="modalCloseQuickGuideBtn" class="ghost" type="button" style="padding: 4px 8px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; color: #666; cursor: pointer;">닫기</button>
+        </div>
+
+        <p style="font-size: 12px; color: #6b7280; margin-bottom: 14px;">처음에는 아래 7단계 순서대로만 진행하시면 완성됩니다.</p>
+
+        <ol style="font-size: 12.5px; color: #374151; padding-left: 20px; line-height: 1.6; margin: 0;">
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #111827;">AI 로그인</strong><br>
+            <span style="color: #6b7280;">사용할 Gemini, ChatGPT 또는 Claude 사이트를 먼저 열고 본인 계정으로 로그인합니다.</span>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #111827;">네이버 글쓰기창 열기</strong><br>
+            <span style="color: #6b7280;">지원되는 네이버·티스토리 또는 Google Blogger 글쓰기 페이지를 띄운 뒤 '현재 탭 연결' 버튼을 누릅니다.</span>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #111827;">주제 입력</strong><br>
+            <span style="color: #6b7280;">주제만 적어도 되고, 필요하면 추가 요청사항과 키워드도 같이 적습니다.</span>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #111827;">초안 작성</strong><br>
+            <span style="color: #6b7280;">초안 작성 버튼을 누르면 글이 생성되고 아래 미리보기에서 바로 확인할 수 있습니다.</span>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #111827;">이미지 준비</strong><br>
+            <span style="color: #6b7280;">자동 이미지 생성 버튼으로 이미지까지 한 번에 준비하거나, 구글 이미지 검색 모드로 바꿔서 검색 이미지를 가져올 수 있습니다.</span>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #111827;">필요하면 수정</strong><br>
+            <span style="color: #6b7280;">수정하기 버튼으로 팝업 편집창을 열어 문구를 손보거나 수정 요청을 다시 보낼 수 있습니다.</span>
+          </li>
+          <li style="margin-bottom: 14px;">
+            <strong style="color: #111827;">최종 입력</strong><br>
+            <span style="color: #6b7280;">마지막에 네이버 글쓰기창에 넣기 버튼을 누르면 글과 이미지가 본문에 자동 입력됩니다.</span>
+          </li>
+        </ol>
+
+        <div style="margin-top: 10px;">
+          <button id="modalConfirmQuickGuideBtn" class="primary" type="button" style="width: 100%; padding: 10px; font-weight: 700; border-radius: 6px; cursor: pointer;">확인했습니다</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 네이버 탭 연결 실패 친절 가이드 모달 팝업 -->
+    <div id="naverConnectFailModal" class="modal hidden" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.6); z-index: 10002;">
+      <div class="card" style="max-width: 340px; width: 92%; padding: 24px 20px; border-radius: 14px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,0.25); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <span style="font-size: 28px;">⚠️</span>
+          <h3 id="connectionGuideTitle" style="font-size: 16.5px; font-weight: 800; color: #191919; margin: 0;">사이트 연결 · 사용법 안내</h3>
+        </div>
+
+        <div style="background-color: #fff2f0; border: 1px solid #ffccc7; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <p style="font-size: 12.5px; font-weight: 700; color: #cf1322; margin: 0; line-height: 1.45;">
+            연결할 화면을 확인해 주세요. 아래에서 사용할 사이트를 선택하면 연결 방법과 사용 순서를 볼 수 있습니다.
+          </p>
+        </div>
+
+        <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 18px;">
+          <label for="connectionGuideSite" class="field-label">어디에 작성하시나요?</label>
+          <select id="connectionGuideSite">
+            <option value="blog">네이버 블로그</option>
+            <option value="cafe">네이버 카페</option>
+            <option value="blogger">Google Blogger</option>
+            <option value="tistory">티스토리</option>
+            <option value="instagram">인스타그램</option>
+            <option value="threads">Threads</option>
+          </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button id="modalOpenNaverDirectBtn" class="primary step-action-btn" type="button" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 800;">
+            🌐 1. 네이버 블로그 접속하기
+          </button>
+
+          <div style="background-color: #e6f7ed; border: 1.5px solid #b7eb8f; border-radius: 10px; padding: 12px; text-align: center;">
+            <p id="connectionGuideNextStep" style="font-size: 13.5px; font-weight: 800; color: #008a29; margin: 0;">
+              ✍️ 2. 접속 후 화면에서 '글쓰기' 클릭
+            </p>
+          </div>
+
+          <button id="modalFailBindTabBtn" class="primary step-action-btn" type="button" style="width: 100%; text-align: center; padding: 12px; font-size: 14px; font-weight: 800;">
+            🔗 현재 탭 연결하기
+          </button>
+
+          <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px;">
+            <p class="field-label">① 사이트 연결하기</p>
+            <ol id="connectionGuideSteps" class="connection-guide-steps"></ol>
+            <p class="field-label top-gap">② 연결 후 사용하기</p>
+            <ol id="connectionGuideUsage" class="connection-guide-steps"></ol>
+            <p id="connectionGuideTip" class="meta top-gap"></p>
+          </div>
+
+          <button id="modalCloseConnectFailBtn" class="ghost" type="button" style="width: 100%; padding: 8px; color: #666; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; margin-top: 2px;">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 답변 생성/해석 실패 안내 모달 팝업 -->
+    <div id="aiResponseErrorModal" class="modal hidden" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.6); z-index: 10003;">
+      <div class="card" style="max-width: 340px; width: 92%; padding: 24px 20px; border-radius: 14px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,0.25); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <span style="font-size: 28px;">🤖⚠️</span>
+          <h3 style="font-size: 16.5px; font-weight: 800; color: #191919; margin: 0;">AI 답변 생성/해석 실패</h3>
+        </div>
+
+        <div style="background-color: #fff2f0; border: 1px solid #ffccc7; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <p id="aiModalErrorMessage" style="font-size: 12.5px; font-weight: 700; color: #cf1322; margin: 0; line-height: 1.45;">
+            AI 챗봇이 정해진 초안 양식을 완성하지 못했습니다.
+          </p>
+        </div>
+
+        <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 18px;">
+          <p style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 8px;">💡 추천 해결 방법 (3가지)</p>
+          <ol style="font-size: 12px; color: #4b5563; padding-left: 18px; line-height: 1.65; margin: 0;">
+            <li style="margin-bottom: 6px;">아래 <strong>'② 초안 다시 작성하기'</strong> 버튼을 누릅니다.</li>
+            <li style="margin-bottom: 6px;">선택한 AI 챗봇(Gemini/ChatGPT/Claude) 웹 탭이 잘 열려있는지 확인합니다.</li>
+            <li>글 작성 AI를 <strong>Gemini / ChatGPT / Claude</strong> 중 다른 서비스로 바꿔서 다시 시도해보세요.</li>
+          </ol>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button id="modalRetryDraftBtn" class="primary step-action-btn" type="button" style="width: 100%; text-align: center;">🔄 ② 초안 다시 작성하기</button>
+          <button id="modalCloseAiErrorBtn" class="ghost" type="button" style="width: 100%; padding: 8px; color: #666; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="error-localization.js"></script>
+    <script src="ui-language.js"></script>
+    <script src="offline-blog-prompt.js"></script>
+    <script src="english-prompts.js"></script>
+    <script src="sidepanel.js"></script>
+    <script src="social-photo-writer.js"></script>
+    <script src="instagram-panel.js"></script>
+    <script src="threads-panel.js"></script>
+    <script src="photo-writer/launcher.js"></script>
+  </body>
+</html>

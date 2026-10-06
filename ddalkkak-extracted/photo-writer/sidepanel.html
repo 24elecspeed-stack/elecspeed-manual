@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>딸깍 SNS · 내 사진으로 글쓰기</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+    <link rel="stylesheet" href="integration.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- 상단 헤더 -->
+      <header class="app-header">
+        <div class="brand">
+          <div class="logo-icon">✨</div>
+          <div class="brand-text">
+            <h1>딸깍 SNS · 내 사진으로 글쓰기</h1>
+            <p class="subtitle">글 작성 & 첨부 이미지 자동 배치</p>
+          </div>
+        </div>
+        <div id="geminiStatus" class="status-badge disconnected" title="Gemini 로그인 세션 연동 상태">
+          <span class="status-dot"></span>
+          <span class="status-text">Gemini 확인 중</span>
+        </div>
+      </header>
+
+  <script src="../english-prompts.js"></script>
+      <!-- 단계 표시 바 -->
+      <div class="stepper">
+        <div class="step-item active" id="stepIndicator1">
+          <span class="step-num">1</span>
+          <span class="step-label">내용 & 사진 입력</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-item" id="stepIndicator2">
+          <span class="step-num">2</span>
+          <span class="step-label">AI 글 작성 & 배치</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-item" id="stepIndicator3">
+          <span class="step-num">3</span>
+          <span class="step-label">완성 & 미리보기</span>
+        </div>
+      </div>
+
+      <!-- 메인 컨텐츠 영역 -->
+      <main class="main-content">
+        <!-- 1단계: 내용, 가이드 및 사진 첨부 폼 -->
+        <section id="step1Section" class="view-panel active">
+          <!-- 이전에 완성된 글 바로가기 배너 -->
+          <div id="resumeDraftBanner" class="resume-draft-banner" style="display: none;">
+            <div class="resume-banner-left">
+              <span class="resume-icon">🎉</span>
+              <div class="resume-info">
+                <strong class="resume-headline">이전에 완성된 블로그 글이 있습니다</strong>
+                <span id="resumeBannerTitle" class="resume-subtext">제목 로딩 중...</span>
+              </div>
+            </div>
+            <button type="button" id="btnResumeComplete" class="btn btn-sm btn-primary">
+              👉 완성본 보기 (3단계)
+            </button>
+          </div>
+
+          <!-- 이전 삭제된 내용 되살리기 알림바 (새 글 작성 후 표시) -->
+          <div id="restoreBackupBanner" class="restore-backup-banner" style="display: none;">
+            <span>이전 입력 내용이 임시 보관되어 있습니다.</span>
+            <button type="button" id="btnRestorePreviousInput" class="btn-restore-link">↩️ 이전 입력 복원</button>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">📝 블로그 글 내용과 사진을 입력해 주세요</h2>
+
+            <!-- 주제 / 제목 -->
+            <div class="form-group">
+              <label for="topicInput">포스팅 주제 / 제목 <span class="text-muted-sm">(선택)</span></label>
+              <input
+                type="text"
+                id="topicInput"
+                placeholder="예: 성수동 신상 디저트 카페 투어 솔직 후기 (미입력 시 자동 생성)"
+                autocomplete="off"
+              />
+            </div>
+
+            <!-- 작성할 핵심 내용 -->
+            <div class="form-group">
+              <label for="contentInput">작성할 내용 <span class="required">*</span></label>
+              <textarea
+                id="contentInput"
+                rows="5"
+                placeholder="블로그에 작성할 핵심 내용, 메모, 경험담, 다루고 싶은 포인트를 자유롭게 적어주세요.&#10;예:&#10;1. 주말 오후 방문한 성수동 베이커리 카페 분위기&#10;2. 시그니처 소금빵과 아인슈페너 솔직 맛 평가&#10;3. 주차 팁(공영주차장 이용) 및 웨이팅 꿀팁"
+              ></textarea>
+            </div>
+
+            <!-- 가이드: 어조 및 세부 가이드 -->
+            <div class="form-group">
+              <label for="aiProviderSelect">사용할 AI</label>
+              <select id="aiProviderSelect">
+                <option value="gemini">Gemini</option>
+                <option value="chatgpt">ChatGPT (GPT)</option>
+                <option value="claude">Claude</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="toneSelect">작성 가이드 - 문체 / 말투</label>
+              <select id="toneSelect">
+                <option value="friendly">친근하고 유익한 해요체 (네이버 블로그 추천)</option>
+                <option value="expert">전문적이고 신뢰감 있는 정보 전달체</option>
+                <option value="review">생생한 솔직 내돈내산 리뷰 / 일기체</option>
+                <option value="humor">재치있고 흥미진진한 친근한 어조</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="guideInput">작성 가이드 - 추가 요청 및 타겟 <span class="text-muted-sm">(선택)</span></label>
+              <textarea
+                id="guideInput"
+                rows="2"
+                placeholder="예: 2030 타겟, 이모지 적극 사용, 중요한 팁은 콜아웃 박스로 강조"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>템플릿 강조색</label>
+              <div id="accentPresetRow" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:8px 0;"></div>
+              <p class="text-muted-sm" style="margin-top:4px;">소제목, 강조 상자(핵심 포인트)와 형광펜 하이라이트에 적용됩니다.</p>
+            </div>
+
+            <!-- 활용할 이미지 첨부 영역 -->
+            <div class="form-group">
+              <label>본문에 배치할 사진 첨부 <span class="required">*</span></label>
+              <label for="imageFileInput" id="imageDropzone" class="image-dropzone">
+                <input type="file" id="imageFileInput" multiple accept="image/jpeg,image/png,image/webp" class="file-input-hidden" />
+                <div class="dropzone-content">
+                  <span class="dropzone-icon">📷</span>
+                  <p class="dropzone-text"><strong>클릭하여 사진 추가</strong> 또는 파일 드래그</p>
+                  <p class="dropzone-sub">JPEG·PNG·WebP · 파일당 8MB 이하 · 최대 100장</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- 첨부된 사진 리스트 및 메모 입력 -->
+            <div id="attachedImagesSection" class="attached-images-section" style="display: none;">
+              <div class="section-title-wrap">
+                <h3 class="sub-title">첨부된 사진 (<span id="attachedCountBadge">0</span>장)</h3>
+                <button type="button" id="btnClearAllImages" class="btn-text text-danger">전체 삭제</button>
+              </div>
+              <div id="heroStatusBanner" class="hero-status-banner"></div>
+              <p class="section-guide-text">👁️ <strong>AI 비전 분석 지원</strong>: AI가 사진 속 실제 시각적 내용을 직접 눈으로 확인하고 최적의 위치에 배치합니다. (추가 강조하고 싶은 내용이 있다면 메모를 입력해 주세요)</p>
+              <div id="attachedImagesList" class="attached-images-list">
+                <!-- 동적으로 생성된 이미지 카드들 -->
+              </div>
+            </div>
+
+            <div id="photoEffectSection" class="photo-effect-section" style="display: none;">
+              <div class="form-group">
+                <label for="photoUseSelect">사진 사용 방식</label>
+                <select id="photoUseSelect">
+                  <option value="original">사진 그대로 사용</option>
+                  <option value="effects">AI로 사진 가공</option>
+                  <option value="cardnews">AI로 카드뉴스 가공</option>
+                </select>
+              </div>
+              <div id="photoEffectControls" class="photo-effect-controls" style="display: none;">
+                <div class="form-group">
+                  <label for="photoEffectProviderSelect">사진 가공 AI</label>
+                  <select id="photoEffectProviderSelect">
+                    <option value="gemini">Gemini</option>
+                    <option value="chatgpt">ChatGPT</option>
+                  </select>
+                </div>
+                <div id="photoCardRatioGroup" class="form-group" style="display: none;">
+                  <label for="photoCardRatioSelect">카드뉴스 비율</label>
+                  <select id="photoCardRatioSelect">
+                    <option value="original">원본 비율</option>
+                    <option value="4:5">4:5</option>
+                    <option value="1:1">1:1</option>
+                    <option value="16:9">16:9</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="photoEffectRequestInput">전체 사진 공통 가공 요청</label>
+                  <textarea id="photoEffectRequestInput" rows="3" placeholder="예: 사진을 따뜻한 색감으로 보정하고 상단에 제목 문구를 추가해 주세요."></textarea>
+                </div>
+                <p class="photo-effect-caution">AI가 인물·제품·배경을 바꾸거나 글자에 오탈자를 만들 수 있습니다. 가공 결과를 확인해 주세요. 원본 사진은 언제든 복원할 수 있습니다.</p>
+                <button id="btnProcessAllPhotos" class="btn btn-accent full-width" type="button">✨ 전체 사진 가공 · 적용</button>
+                <p id="photoEffectStatus" class="photo-effect-status"></p>
+              </div>
+            </div>
+
+            <!-- 본문 사진 활용 옵션 (전체 vs 지정 개수 선별) -->
+            <div id="imageUsageOptionSection" class="image-usage-option-section" style="display: none;">
+              <div class="image-usage-header">
+                <label>본문 사진 활용 옵션</label>
+                <span id="imageUsageSummaryBadge" class="badge-usage-mode">전체 활용</span>
+              </div>
+              <div class="image-usage-box">
+                <label class="usage-radio-card" id="labelUsageAll">
+                  <input type="radio" name="imageUsageMode" id="imageUsageAll" value="all" checked />
+                  <div class="usage-card-body">
+                    <div class="usage-card-top">
+                      <span class="usage-card-title">모든 사진 활용하기 <strong id="allImagesCountText">(총 0장)</strong></span>
+                    </div>
+                    <span class="usage-card-desc">첨부된 모든 사진을 본문 흐름에 맞춰 빠짐없이 골고루 배치합니다.</span>
+                  </div>
+                </label>
+
+                <label class="usage-radio-card" id="labelUsageCustom">
+                  <input type="radio" name="imageUsageMode" id="imageUsageCustom" value="custom" />
+                  <div class="usage-card-body">
+                    <div class="usage-card-top">
+                      <span class="usage-card-title">지정한 개수만 선별하여 활용하기</span>
+                      <div class="custom-count-picker" id="customCountPicker">
+                        <input type="number" id="customImageCountInput" min="1" max="100" value="5" class="custom-count-input" />
+                        <span class="custom-count-unit">장</span>
+                      </div>
+                    </div>
+                    <span class="usage-card-desc">AI가 전체 사진 중 글의 핵심과 가장 잘 어울리는 대표 사진만 엄선하여 배치합니다.</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <button id="btnGenerateArticle" class="btn btn-primary full-width" type="button">
+              <span class="btn-icon">🚀</span>
+              HTML 글 작성 및 이미지 자동 배치 시작
+            </button>
+          </div>
+        </section>
+
+        <!-- 2단계: 생성 진행 중 (로딩) -->
+        <section id="step2ProgressSection" class="view-panel">
+          <div class="card progress-card">
+            <div class="spinner-wrap">
+              <div class="spinner"></div>
+            </div>
+            <h2 id="progressStatusTitle" class="progress-title">AI가 작업 중입니다...</h2>
+            <p id="progressStatusDetail" class="progress-detail">Gemini 창에서 요청을 처리하고 있습니다.</p>
+            <div class="progress-meta-row">
+              <span id="progressTimerBadge" class="timer-badge">⏱️ 0초 경과</span>
+            </div>
+
+            <div id="stallWarningBox" class="stall-warning-box" style="display: none;">
+              <div class="stall-icon">⚠️</div>
+              <div class="stall-text">
+                <strong>작업 지연 감지 (<span id="stallSecCount">25</span>초 경과)</strong>
+                <p>Gemini 웹페이지의 처리가 지연되고 있습니다. 아래 버튼을 눌러 AI에게 진단 리포트를 전달해 주세요.</p>
+              </div>
+            </div>
+
+            <div class="progress-steps-list">
+              <div class="progress-step-item current" id="progStepAnalyze">
+                <span class="p-icon">📷</span>
+                <span class="p-text">1단계: 사진 비전 분석 (10장 단위 분할 인식)</span>
+              </div>
+              <div class="progress-step-item pending" id="progStepHtml">
+                <span class="p-icon">✍️</span>
+                <span class="p-text">2단계: 분석 기반 완성형 블로그 본문 작성</span>
+              </div>
+              <div class="progress-step-item pending" id="progStepAssembly">
+                <span class="p-icon">🧩</span>
+                <span class="p-text">3단계: 원본 사진 본문 결합 및 페이지 완성</span>
+              </div>
+            </div>
+
+            <div class="progress-action-row">
+              <button id="btnCopyDiagFromProgress" class="btn btn-diag-outline full-width" type="button">
+                <span class="btn-icon">📋</span>
+                AI 진단 리포트 즉시 복사 (증상 캡처)
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3단계: 완료 화면 -->
+        <section id="step3CompleteSection" class="view-panel">
+          <div class="card complete-card">
+            <div class="complete-badge">🎉</div>
+            <div class="complete-title-wrap">
+              <h2 class="complete-title">블로그 포스팅 완성!</h2>
+              <span id="revisionVersionBadge" class="badge badge-version">초안 (v1)</span>
+            </div>
+            <p class="complete-desc">HTML 본문과 첨부하신 사진이 최적의 위치에 배치되었습니다.</p>
+
+            <div class="meta-box">
+              <div class="meta-item">
+                <span class="meta-label">제목</span>
+                <span id="finalTitleMeta" class="meta-value"></span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">배치된 이미지</span>
+                <span id="finalImageCountMeta" class="meta-value"></span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">추천 태그</span>
+                <div id="finalTagsContainer" class="tags-container"></div>
+              </div>
+            </div>
+
+            <div class="action-buttons-group">
+              <button id="btnOpenFinalView" class="btn btn-primary full-width" type="button">
+                <span class="btn-icon">🌐</span>
+                최종 HTML 페이지 보기 (새 창)
+              </button>
+
+              <button id="btnCopyHtml" class="btn btn-secondary full-width" type="button">
+                <span class="btn-icon">📋</span>
+                HTML 코드 바로 복사
+              </button>
+
+              <button id="btnGoToStep1" class="btn btn-secondary full-width" type="button">
+                <span class="btn-icon">📝</span>
+                원본 입력 정보 및 사진 확인/수정 (1단계)
+              </button>
+
+              <button id="btnStartNew" class="btn btn-ghost full-width" type="button">
+                ✏️ 새로운 글 작성하기
+              </button>
+            </div>
+          </div>
+
+          <!-- 추가 요청사항 반영 (AI 재제작 / 리비전) 카드 -->
+          <div class="card revision-card">
+            <div class="revision-header">
+              <div class="revision-header-left">
+                <span class="revision-icon">🔄</span>
+                <h3 class="revision-title">추가 요청사항 반영 (AI 재제작)</h3>
+              </div>
+            </div>
+            <p class="revision-desc">
+              사진 분석 결과를 유지하고 추가 피드백을 반영하여 본문과 사진 배치를 다시 작성합니다.
+            </p>
+
+            <div class="quick-chips-container">
+              <span class="chip-label">⚡ 빠른 요청 추천:</span>
+              <div class="quick-chips-list">
+                <button type="button" class="quick-chip" data-chip="문체를 조금 더 친근하고 생동감 있게 다듬어줘.">✍️ 친근한 문체</button>
+                <button type="button" class="quick-chip" data-chip="제품의 특장점과 프로모션 혜택 내용을 더 강조해줘.">⚡ 혜택/특장점 강조</button>
+                <button type="button" class="quick-chip" data-chip="소제목별로 핵심 요약 bullet point 목록을 추가해줘.">📌 핵심 요약 추가</button>
+                <button type="button" class="quick-chip" data-chip="서론과 결론을 더 간결하고 임팩트 있게 압축해줘.">✂️ 간결하게 압축</button>
+                <button type="button" class="quick-chip" data-chip="핵심 스펙 비교 요약 표를 본문에 추가해줘.">📊 스펙 요약표 추가</button>
+              </div>
+            </div>
+
+            <div class="input-group" style="margin-top: 10px;">
+              <label for="revisionInput" class="input-label">
+                수정 및 보완 요청사항
+              </label>
+              <textarea
+                id="revisionInput"
+                class="form-control textarea"
+                rows="3"
+                placeholder="예: 2번 소제목에 실사용 배터리 타임을 보강해줘, 4번 사진 설명을 좀 더 길게 해줘, 결론에 구매 팁을 넣어줘 등 자유롭게 적어주세요."
+              ></textarea>
+            </div>
+
+            <button id="btnReviseArticle" class="btn btn-accent full-width" type="button" style="margin-top: 10px;">
+              <span class="btn-icon">✨</span>
+              추가 요청 반영하여 다시 제작하기
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <!-- 실시간 디버그 로그 및 AI 진단 패널 -->
+      <section id="diagnosticsSection" class="diagnostics-panel">
+        <div class="diag-header" id="diagHeaderToggle">
+          <div class="diag-title">
+            <span class="diag-icon">🛠️</span>
+            <span class="diag-title-text">실시간 디버그 로그 &amp; 진단</span>
+            <span id="diagLogCountBadge" class="diag-count-badge">0</span>
+          </div>
+          <div class="diag-controls">
+            <button type="button" id="btnCopyDiagnosticReport" class="btn-diag-copy" title="AI 어시스턴트에게 전달할 마크다운 진단 리포트 복사">
+              📋 리포트 복사
+            </button>
+            <button type="button" id="btnClearLogs" class="btn-diag-icon" title="로그 지우기">🗑️</button>
+            <span id="diagToggleArrow" class="diag-arrow">▲</span>
+          </div>
+        </div>
+        <div id="diagBody" class="diag-body" style="display: none;">
+          <div id="diagLogStream" class="diag-log-stream">
+            <div class="log-line log-info">
+              <span class="log-time">[대기]</span>
+              <span class="log-tag">[SYSTEM]</span>
+              진단 콘솔이 활성화되었습니다. 작업 진행 시 실시간 상세 로그가 기록됩니다.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 복사 알림 토스트 -->
+      <div id="diagToast" class="diag-toast" style="display: none;"></div>
+
+      <!-- 하단 안내 푸터 -->
+      <footer class="app-footer">
+        <p>💡 로그인된 <a href="https://gemini.google.com" target="_blank" id="footerGeminiLink">Gemini 웹페이지</a>의 세션을 활용합니다.</p>
+      </footer>
+    </div>
+
+    <script src="strings.js"></script>
+    <script src="../error-localization.js"></script>
+    <script src="../ui-language.js"></script>
+    <script src="integration.js"></script>
+    <script src="diagnostic-report.js"></script>
+    <script src="sidepanel.js"></script>
+    <script src="page-bridge.js"></script>
+    <script src="english.js"></script>
+  </body>
+</html>
