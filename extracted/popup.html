@@ -2362,6 +2362,13 @@
                 <label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:8px;">
                     <input type="checkbox" id="ea-publish-live"> 실제 발행(공개)로 올리기 — 끄면 항상 임시글
                 </label>
+                <label style="display:block;font-size:11px;margin-top:8px;">글쓰기 방식(투트랙)
+                    <select id="ea-ai-source" style="width:100%;box-sizing:border-box;margin-top:2px;">
+                        <option value="api">Gemini API (기본, 빠름)</option>
+                        <option value="gemini-dom">Gemini 웹(DOM, 로그인된 브라우저 세션 사용)</option>
+                        <option value="chatgpt-dom">ChatGPT 웹(DOM, 로그인된 브라우저 세션 사용)</option>
+                    </select>
+                </label>
                 <button id="ea-save-settings" style="margin-top:8px;width:100%;">설정 저장</button>
             </fieldset>
 

@@ -46,6 +46,7 @@
     $("ea-window-start").value = s.windowStartHour ?? 9;
     $("ea-window-end").value = s.windowEndHour ?? 21;
     $("ea-publish-live").checked = s.publishStatus === "publish";
+    $("ea-ai-source").value = s.aiSource || "api";
   }
 
   function collectSettingsFromForm() {
@@ -57,7 +58,8 @@
       postsPerDay: Math.max(1, parseInt($("ea-posts-per-day").value, 10) || 1),
       windowStartHour: Math.min(23, Math.max(0, parseInt($("ea-window-start").value, 10) || 9)),
       windowEndHour: Math.min(23, Math.max(0, parseInt($("ea-window-end").value, 10) || 21)),
-      publishStatus: $("ea-publish-live").checked ? "publish" : "draft"
+      publishStatus: $("ea-publish-live").checked ? "publish" : "draft",
+      aiSource: $("ea-ai-source").value
     };
   }
 

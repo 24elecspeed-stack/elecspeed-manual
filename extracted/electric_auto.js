@@ -6,6 +6,45 @@ const SETTINGS_KEY = "electricAutoSettings";
 const STATE_KEY = "electricAutoState";
 const ALARM_NAME = "electricAutoPostAlarm";
 
+// 딸깍 background.js의 chatGptSubmissionPhases/handleMessage(NB_CHATGPT_PHASE)를 그대로 이식.
+// requestId별로 tabId를 미리 등록해두고(generateArticleViaChatGptDom에서), 보고가 올 때
+// 그 탭에서 온 게 맞는지 / phase 값이 유효한지 검증한다 (원본은 {ok:true,...result}로 감싸서
+// 응답하므로 여기서도 ok:true를 항상 포함하고, recorded만 조건부로 true/false).
+const chatGptSubmissionPhases = new Map();
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type !== "NB_CHATGPT_PHASE") return false;
+  const state = chatGptSubmissionPhases.get(String(msg.requestId || ""));
+  const validPhase = ["preparing", "send_started", "sent"].includes(msg.phase);
+  console.log("[electric_auto] NB_CHATGPT_PHASE", msg.requestId, msg.phase, "state:", state);
+  if (!state || sender.tab?.id !== state.tabId || !validPhase) {
+    sendResponse({ ok: true, recorded: false });
+    return false;
+  }
+  state.phase = msg.phase;
+  sendResponse({ ok: true, recorded: true });
+  return false;
+});
+
+// wp-json으로 나가는 요청에 실제로 어떤 헤더가 실리는지 자동으로 콘솔에 찍는다.
+// (사람이 DevTools Network 탭에서 직접 확인하지 않아도 되도록)
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  details => {
+    const headerSummary = (details.requestHeaders || []).map(h =>
+      h.name.toLowerCase() === "authorization" ? `${h.name}: Basic ***(len=${h.value.length})` : `${h.name}: ${h.value}`
+    );
+    console.log("[electric_auto] 실제 전송 헤더(" + details.method + " " + details.url + "):", headerSummary);
+    appendLog(`[진단] 실제 전송 헤더: ${headerSummary.join(" | ")}`);
+  },
+  { urls: ["*://*/wp-json/*"] },
+  ["requestHeaders"]
+);
+
+// Origin/Referer 제거 규칙은 효과가 없었고 오히려 역효과 가능성이 있어 제거함.
+// 실제 원인은 Origin이 아니라, 이 확장이 가진 <all_urls> 호스트 권한 때문에 워드프레스
+// 관리자 로그인 쿠키가 요청에 같이 실려서, 쿠키 인증(nonce 필요)이 Basic 인증보다 먼저
+// 걸려 막혔을 가능성 - 그래서 모든 fetch에 credentials:"omit"을 추가함.
+chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [90001] }).catch(() => {});
+
 function defaultSettings() {
   return {
     mainKeyword: "전기수리",
@@ -16,7 +55,9 @@ function defaultSettings() {
     windowStartHour: 9,
     windowEndHour: 21,
     // 안전장치: 사용자가 명시적으로 "publish"로 바꾸기 전까지는 항상 임시글(draft)로만 올라간다.
-    publishStatus: "draft"
+    publishStatus: "draft",
+    // 투트랙: "api"(Gemini REST API, 기본) | "gemini-dom" | "chatgpt-dom" (딸깍 소스 그대로 이식)
+    aiSource: "api"
   };
 }
 
@@ -214,6 +255,176 @@ async function callGeminiApi(prompt, apiKey, model) {
   return text;
 }
 
+// ---- 3-B. DOM 자동화 (딸깍 소스 그대로 이식: ddalkkak_gemini_content.js / ddalkkak_chatgpt_content.js) ----
+async function ensureDomScript(tabId, file, pingType) {
+  // ping으로 "이미 주입됐는지" 판단하면 안 된다 - 이 확장에 이미 들어있는 다른 content
+  // script(content_gpts.js 등)가 같은 탭에서 ping에 반응 없이도 undefined로 응답을 끝내버려서,
+  // 주입이 필요 없다고 잘못 판단하게 된다. 딸깍 소스 자체가 중복 주입 가드(window.__xxxLoaded)를
+  // 갖고 있으므로 매번 그냥 주입한다.
+  await chrome.scripting.executeScript({ target: { tabId }, files: [file] });
+}
+
+function waitForTabComplete(tabId, timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      reject(new Error("페이지 로딩 시간 초과"));
+    }, timeoutMs);
+    const listener = (id, info) => {
+      if (id === tabId && info.status === "complete") {
+        clearTimeout(timer);
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+}
+
+// 딸깍 background.js의 buildGeminiPopupCreateData를 그대로 이식 - 탭이 아니라 팝업 창으로 연다.
+async function buildGeminiPopupCreateData(focus) {
+  let anchorWindow = null;
+  try {
+    anchorWindow = await chrome.windows.getLastFocused();
+  } catch (e) {}
+  const anchorWidth = typeof anchorWindow?.width === "number" ? anchorWindow.width : 1440;
+  const anchorHeight = typeof anchorWindow?.height === "number" ? anchorWindow.height : 960;
+  const width = Math.max(960, Math.min(1280, Math.round(anchorWidth * 0.82)));
+  const height = Math.max(760, Math.min(960, Math.round(anchorHeight * 0.9)));
+  const createData = { url: "https://gemini.google.com/app", type: "popup", width, height, focused: Boolean(focus) };
+  if (
+    typeof anchorWindow?.left === "number" &&
+    typeof anchorWindow?.top === "number" &&
+    typeof anchorWindow?.width === "number" &&
+    typeof anchorWindow?.height === "number"
+  ) {
+    createData.left = anchorWindow.left + Math.max(0, Math.floor((anchorWindow.width - width) / 2));
+    createData.top = anchorWindow.top + Math.max(0, Math.floor((anchorWindow.height - height) / 2));
+  }
+  return createData;
+}
+
+// 딸깍의 waitForWindowPrimaryTab을 그대로 이식.
+function waitForWindowPrimaryTab(windowId, timeoutMs) {
+  return new Promise(async (resolve, reject) => {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      const tabs = await chrome.tabs.query({ windowId });
+      const popupTab =
+        tabs.find(t => t.active && /^https:\/\/gemini\.google\.com\//.test(t.url || "")) ||
+        tabs.find(t => /^https:\/\/gemini\.google\.com\//.test(t.url || "")) ||
+        tabs[0];
+      if (popupTab?.id) return resolve(popupTab);
+      await new Promise(r => setTimeout(r, 150));
+    }
+    reject(new Error("Gemini 팝업 탭을 찾지 못했습니다."));
+  });
+}
+
+async function generateArticleViaGeminiDom(keyword, references) {
+  // 딸깍 소스(background.js sendPromptToGemini)의 지시문을 글자 하나 안 바꾸고 그대로 사용.
+  const prompt =
+    buildPrompt(keyword, references) +
+    "\n\n[중요] 반드시 일반 채팅 말풍선 안에 ```html 코드블록으로만 답변하세요. Canvas나 몰입형 문서(Immersive) 모드를 사용하지 마세요.";
+
+  const createData = await buildGeminiPopupCreateData(false);
+  const popupWindow = await chrome.windows.create(createData);
+  const tab = await waitForWindowPrimaryTab(popupWindow.id, 30000);
+  try {
+    await waitForTabComplete(tab.id);
+    const loadedTab = await chrome.tabs.get(tab.id);
+    await appendLog(`[진단] Gemini 팝업 탭 URL: ${loadedTab.url}`);
+    await ensureDomScript(tab.id, "ddalkkak_gemini_content.js", "NB_GEMINI_PING");
+    const result = await chrome.tabs.sendMessage(tab.id, {
+      type: "NB_GEMINI_SUBMIT",
+      prompt,
+      options: { timeoutMs: 240000 }
+    });
+    await appendLog(`[진단] Gemini(DOM) 응답 객체: ${JSON.stringify(result === undefined ? "undefined" : result).slice(0, 500)}`);
+    if (!result || !result.ok) throw new Error((result && result.error) || "Gemini(DOM) 응답을 가져오지 못했습니다.");
+    return parseArticle(result.text, keyword);
+  } catch (e) {
+    await appendLog(`[진단] Gemini(DOM) 예외: ${e.message}`);
+    throw e;
+  } finally {
+    chrome.windows.remove(popupWindow.id).catch(() => {});
+  }
+}
+
+// 딸깍 background.js의 buildChatGptPopupCreateData를 그대로 이식.
+async function buildChatGptPopupCreateData(focus) {
+  let anchorWindow = null;
+  try {
+    anchorWindow = await chrome.windows.getLastFocused();
+  } catch (e) {}
+  const anchorWidth = typeof anchorWindow?.width === "number" ? anchorWindow.width : 1440;
+  const anchorHeight = typeof anchorWindow?.height === "number" ? anchorWindow.height : 960;
+  const width = Math.max(960, Math.min(1280, Math.round(anchorWidth * 0.82)));
+  const height = Math.max(760, Math.min(960, Math.round(anchorHeight * 0.9)));
+  const createData = { url: "https://chatgpt.com/", type: "popup", width, height, focused: Boolean(focus) };
+  if (
+    typeof anchorWindow?.left === "number" &&
+    typeof anchorWindow?.top === "number" &&
+    typeof anchorWindow?.width === "number" &&
+    typeof anchorWindow?.height === "number"
+  ) {
+    createData.left = anchorWindow.left + Math.max(0, Math.floor((anchorWindow.width - width) / 2));
+    createData.top = anchorWindow.top + Math.max(0, Math.floor((anchorWindow.height - height) / 2));
+  }
+  return createData;
+}
+
+function waitForChatGptWindowPrimaryTab(windowId, timeoutMs) {
+  return new Promise(async (resolve, reject) => {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      const tabs = await chrome.tabs.query({ windowId });
+      const popupTab =
+        tabs.find(t => t.active && /^https:\/\/(chatgpt\.com|chat\.openai\.com)\//.test(t.url || "")) ||
+        tabs.find(t => /^https:\/\/(chatgpt\.com|chat\.openai\.com)\//.test(t.url || "")) ||
+        tabs[0];
+      if (popupTab?.id) return resolve(popupTab);
+      await new Promise(r => setTimeout(r, 150));
+    }
+    reject(new Error("ChatGPT 팝업 탭을 찾지 못했습니다."));
+  });
+}
+
+async function generateArticleViaChatGptDom(keyword, references) {
+  const prompt = buildPrompt(keyword, references);
+  const createData = await buildChatGptPopupCreateData(false);
+  const popupWindow = await chrome.windows.create(createData);
+  const tab = await waitForChatGptWindowPrimaryTab(popupWindow.id, 30000);
+  try {
+    await waitForTabComplete(tab.id);
+    const loadedTab = await chrome.tabs.get(tab.id);
+    await appendLog(`[진단] ChatGPT 팝업 탭 URL: ${loadedTab.url}`);
+    await ensureDomScript(tab.id, "ddalkkak_chatgpt_content.js", "NB_CHATGPT_PING");
+    const requestId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
+    // 딸깍 원본(sendPromptToChatGpt)과 동일하게, SUBMIT 보내기 전에 requestId->tabId를 먼저 등록해둔다.
+    chatGptSubmissionPhases.set(requestId, { tabId: tab.id, phase: "unknown" });
+    let result;
+    try {
+      result = await chrome.tabs.sendMessage(tab.id, {
+        type: "NB_CHATGPT_SUBMIT",
+        requestId,
+        prompt,
+        options: { timeoutMs: 240000 }
+      });
+    } finally {
+      chatGptSubmissionPhases.delete(requestId);
+    }
+    await appendLog(`[진단] ChatGPT(DOM) 응답 객체: ${JSON.stringify(result === undefined ? "undefined" : result).slice(0, 500)}`);
+    if (!result || !result.ok) throw new Error((result && result.error) || "ChatGPT(DOM) 응답을 가져오지 못했습니다.");
+    return parseArticle(result.text, keyword);
+  } catch (e) {
+    await appendLog(`[진단] ChatGPT(DOM) 예외: ${e.message}`);
+    throw e;
+  } finally {
+    chrome.windows.remove(popupWindow.id).catch(() => {});
+  }
+}
+
 async function generateArticleViaApi(keyword, references) {
   const prompt = buildPrompt(keyword, references);
   const { geminiApiKeys = [] } = await chrome.storage.local.get({ geminiApiKeys: [] });
@@ -260,7 +471,10 @@ async function checkWordPressLogin(settings) {
     authHeaderLength: auth.length
   });
 
-  const res = await fetch(`${base}/wp-json/wp/v2/users/me?context=edit`, { headers: { Authorization: auth } });
+  const res = await fetch(`${base}/wp-json/wp/v2/users/me?context=edit`, {
+    headers: { Authorization: auth },
+    credentials: "omit" // 워드프레스 쿠키(관리자 로그인 세션) 전송 방지 - nonce 없는 쿠키 인증이 먼저 걸려서 막혔을 가능성
+  });
   const body = await res.json().catch(() => ({}));
   console.log("[electric_auto] 로그인 확인(users/me) 상태:", res.status, body);
   if (!res.ok || !(body.id > 0)) {
@@ -290,7 +504,7 @@ async function publishToWordPress(article, settings) {
 
   const dupResp = await fetch(
     `${base}/wp-json/wp/v2/electric_case?slug=${encodeURIComponent(slug)}&context=edit&status=publish,draft,pending,future,private`,
-    { headers: { Authorization: auth } }
+    { headers: { Authorization: auth }, credentials: "omit" }
   );
   console.log("[electric_auto] 중복확인 GET 상태:", dupResp.status);
   const dupCheck = dupResp.ok ? await dupResp.json() : [];
@@ -301,7 +515,8 @@ async function publishToWordPress(article, settings) {
   // Android 앱(request("GET","case_type?slug=..."))과 동일하게, 못 찾으면 바로 실패시킨다.
   const caseTypeSlug = matchCaseTypeSlug(article.keyword);
   const termResp = await fetch(`${base}/wp-json/wp/v2/case_type?slug=${encodeURIComponent(caseTypeSlug)}`, {
-    headers: { Authorization: auth }
+    headers: { Authorization: auth },
+    credentials: "omit"
   }).then(r => (r.ok ? r.json() : []));
   if (!Array.isArray(termResp) || !termResp[0]) {
     throw new Error(`사이트에서 작업 유형을 찾지 못했습니다: ${caseTypeSlug}`);
@@ -327,7 +542,8 @@ async function publishToWordPress(article, settings) {
   const res = await fetch(`${base}/wp-json/wp/v2/electric_case`, {
     method: "POST",
     headers: { Authorization: auth, "Content-Type": "application/json; charset=UTF-8" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    credentials: "omit"
   });
   const json = await res.json().catch(() => ({}));
   console.log("[electric_auto] 발행 POST 상태:", res.status, json);
@@ -339,8 +555,16 @@ async function publishToWordPress(article, settings) {
 // 5-1. 키워드 -> 크롤링 -> 글 생성까지만 (발행은 하지 않고 미리보기용으로 돌려준다)
 async function generateDraft(keywordObj) {
   const keyword = keywordObj.keyword;
+  const settings = await getSettings();
   const references = await crawlReferenceArticles(keyword, 3);
-  const article = await generateArticleViaApi(keyword, references);
+  let article;
+  if (settings.aiSource === "gemini-dom") {
+    article = await generateArticleViaGeminiDom(keyword, references);
+  } else if (settings.aiSource === "chatgpt-dom") {
+    article = await generateArticleViaChatGptDom(keyword, references);
+  } else {
+    article = await generateArticleViaApi(keyword, references);
+  }
   return { ...article, referenceUrls: references.map(r => r.url) };
 }
 
