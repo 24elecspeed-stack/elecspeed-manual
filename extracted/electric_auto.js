@@ -6,24 +6,8 @@ const SETTINGS_KEY = "electricAutoSettings";
 const STATE_KEY = "electricAutoState";
 const ALARM_NAME = "electricAutoPostAlarm";
 
-// 딸깍 background.js의 chatGptSubmissionPhases/handleMessage(NB_CHATGPT_PHASE)를 그대로 이식.
-// requestId별로 tabId를 미리 등록해두고(generateArticleViaChatGptDom에서), 보고가 올 때
-// 그 탭에서 온 게 맞는지 / phase 값이 유효한지 검증한다 (원본은 {ok:true,...result}로 감싸서
-// 응답하므로 여기서도 ok:true를 항상 포함하고, recorded만 조건부로 true/false).
-const chatGptSubmissionPhases = new Map();
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg?.type !== "NB_CHATGPT_PHASE") return false;
-  const state = chatGptSubmissionPhases.get(String(msg.requestId || ""));
-  const validPhase = ["preparing", "send_started", "sent"].includes(msg.phase);
-  console.log("[electric_auto] NB_CHATGPT_PHASE", msg.requestId, msg.phase, "state:", state);
-  if (!state || sender.tab?.id !== state.tabId || !validPhase) {
-    sendResponse({ ok: true, recorded: false });
-    return false;
-  }
-  state.phase = msg.phase;
-  sendResponse({ ok: true, recorded: true });
-  return false;
-});
+// ChatGPT DOM은 딸깍 원본 소스(chatgpt-background.js / chatgpt-content.js)를 그대로 사용.
+import { runChatGptPromptInPopup } from "./chatgpt-background.js";
 
 // wp-json으로 나가는 요청에 실제로 어떤 헤더가 실리는지 자동으로 콘솔에 찍는다.
 // (사람이 DevTools Network 탭에서 직접 확인하지 않아도 되도록)
@@ -255,7 +239,7 @@ async function callGeminiApi(prompt, apiKey, model) {
   return text;
 }
 
-// ---- 3-B. DOM 자동화 (딸깍 소스 그대로 이식: ddalkkak_gemini_content.js / ddalkkak_chatgpt_content.js) ----
+// ---- 3-B. DOM 자동화 (딸깍 소스 그대로 이식: ddalkkak_gemini_content.js / chatgpt-content.js) ----
 async function ensureDomScript(tabId, file, pingType) {
   // ping으로 "이미 주입됐는지" 판단하면 안 된다 - 이 확장에 이미 들어있는 다른 content
   // script(content_gpts.js 등)가 같은 탭에서 ping에 반응 없이도 undefined로 응답을 끝내버려서,
@@ -351,78 +335,83 @@ async function generateArticleViaGeminiDom(keyword, references) {
   }
 }
 
-// 딸깍 background.js의 buildChatGptPopupCreateData를 그대로 이식.
-async function buildChatGptPopupCreateData(focus) {
-  let anchorWindow = null;
-  try {
-    anchorWindow = await chrome.windows.getLastFocused();
-  } catch (e) {}
-  const anchorWidth = typeof anchorWindow?.width === "number" ? anchorWindow.width : 1440;
-  const anchorHeight = typeof anchorWindow?.height === "number" ? anchorWindow.height : 960;
-  const width = Math.max(960, Math.min(1280, Math.round(anchorWidth * 0.82)));
-  const height = Math.max(760, Math.min(960, Math.round(anchorHeight * 0.9)));
-  const createData = { url: "https://chatgpt.com/", type: "popup", width, height, focused: Boolean(focus) };
-  if (
-    typeof anchorWindow?.left === "number" &&
-    typeof anchorWindow?.top === "number" &&
-    typeof anchorWindow?.width === "number" &&
-    typeof anchorWindow?.height === "number"
-  ) {
-    createData.left = anchorWindow.left + Math.max(0, Math.floor((anchorWindow.width - width) / 2));
-    createData.top = anchorWindow.top + Math.max(0, Math.floor((anchorWindow.height - height) / 2));
-  }
-  return createData;
-}
-
-function waitForChatGptWindowPrimaryTab(windowId, timeoutMs) {
-  return new Promise(async (resolve, reject) => {
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < timeoutMs) {
-      const tabs = await chrome.tabs.query({ windowId });
-      const popupTab =
-        tabs.find(t => t.active && /^https:\/\/(chatgpt\.com|chat\.openai\.com)\//.test(t.url || "")) ||
-        tabs.find(t => /^https:\/\/(chatgpt\.com|chat\.openai\.com)\//.test(t.url || "")) ||
-        tabs[0];
-      if (popupTab?.id) return resolve(popupTab);
-      await new Promise(r => setTimeout(r, 150));
-    }
-    reject(new Error("ChatGPT 팝업 탭을 찾지 못했습니다."));
+// 딸깍 초안 함수(offline-blog-prompt.js / sidepanel-draft.js)는 document가 필요해서
+// 기존 offscreen.html 안에서 돌린다. 기존 코드와 같은 방식(같은 url/reasons)으로 문서를 확인/생성한다.
+async function sendToDdalkkakOffscreen(message) {
+  const url = "/offscreen.html";
+  const contexts = await chrome.runtime.getContexts({
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+    documentUrls: [chrome.runtime.getURL(url)]
   });
+  if (!contexts.length) {
+    await chrome.offscreen.createDocument({
+      url,
+      reasons: ["DOM_PARSER", "AUDIO_PLAYBACK", "CLIPBOARD"],
+      justification: "HTML/XML parsing, sound playback, and clipboard operations."
+    });
+  }
+  const result = await chrome.runtime.sendMessage({ target: "ddalkkak-draft", ...message });
+  if (!result?.ok) throw new Error(result?.error || "딸깍 초안 처리에 실패했습니다.");
+  return result;
 }
 
 async function generateArticleViaChatGptDom(keyword, references) {
-  const prompt = buildPrompt(keyword, references);
-  const createData = await buildChatGptPopupCreateData(false);
-  const popupWindow = await chrome.windows.create(createData);
-  const tab = await waitForChatGptWindowPrimaryTab(popupWindow.id, 30000);
-  try {
-    await waitForTabComplete(tab.id);
-    const loadedTab = await chrome.tabs.get(tab.id);
-    await appendLog(`[진단] ChatGPT 팝업 탭 URL: ${loadedTab.url}`);
-    await ensureDomScript(tab.id, "ddalkkak_chatgpt_content.js", "NB_CHATGPT_PING");
-    const requestId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
-    // 딸깍 원본(sendPromptToChatGpt)과 동일하게, SUBMIT 보내기 전에 requestId->tabId를 먼저 등록해둔다.
-    chatGptSubmissionPhases.set(requestId, { tabId: tab.id, phase: "unknown" });
-    let result;
-    try {
-      result = await chrome.tabs.sendMessage(tab.id, {
-        type: "NB_CHATGPT_SUBMIT",
-        requestId,
-        prompt,
-        options: { timeoutMs: 240000 }
-      });
-    } finally {
-      chatGptSubmissionPhases.delete(requestId);
+  // 딸깍 글쓰기 명령문(buildOfflineBlogPrompt) + 참고글은 딸깍 research 형식으로 넘긴다.
+  const research = references && references.length
+    ? {
+        keyword,
+        requestedReferenceCount: references.length,
+        references: references.map((r, i) => ({ rank: i + 1, url: r.url, content: r.text }))
+      }
+    : null;
+  const { prompt: originalPrompt } = await sendToDdalkkakOffscreen({
+    type: "BUILD_PROMPT",
+    topic: keyword,
+    research,
+    state: { topic: keyword, textProvider: "chatgpt" }
+  });
+
+  // 딸깍 sidepanel.js requestValidatedBlogDraft의 재시도 루프(한국어 분기)를 그대로 옮김.
+  const maxAttempts = 3;
+  let formatError = "";
+  let text = "";
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (attempt > 1) {
+      await appendLog(`초안 JSON 형식이 맞지 않아 다시 요청합니다. (${attempt}/${maxAttempts})`);
     }
-    await appendLog(`[진단] ChatGPT(DOM) 응답 객체: ${JSON.stringify(result === undefined ? "undefined" : result).slice(0, 500)}`);
-    if (!result || !result.ok) throw new Error((result && result.error) || "ChatGPT(DOM) 응답을 가져오지 못했습니다.");
-    return parseArticle(result.text, keyword);
-  } catch (e) {
-    await appendLog(`[진단] ChatGPT(DOM) 예외: ${e.message}`);
-    throw e;
-  } finally {
-    chrome.windows.remove(popupWindow.id).catch(() => {});
+    const prompt = attempt === 1 ? originalPrompt : `${originalPrompt}
+
+[출력 형식 재시도 ${attempt}/${maxAttempts}]
+이전 응답의 형식 검사 오류: ${formatError}
+원래 주제, 요청사항과 출력 JSON 구조를 지켜 초안을 처음부터 완성해 주세요.
+설명문이나 마크다운 코드블록 없이 JSON.parse 가능한 JSON 객체 하나만 반환하세요.
+title은 비어 있지 않은 문자열, content는 내용이 채워진 본문 블록 객체 배열이어야 합니다.
+summary는 문자열, seo_tags와 image_prompts는 원래 요청 형식의 배열로 작성하세요.
+JSON 중간에서 끝내지 말고 따옴표와 괄호까지 완전히 닫으세요.`;
+    // 딸깍 sidepanel.js의 글 생성 요청 옵션(buildAiSubmitOptions, 기본 new-chat)과 동일.
+    const aiResult = await runChatGptPromptInPopup(prompt, {
+      newChat: true,
+      temporaryChat: false,
+      collectImages: false,
+      timeoutMs: 240000
+    });
+    text = aiResult.response?.text;
+    await appendLog(`[진단] ChatGPT 원문 응답 ${attempt}회차 (${String(text || "").length}자): ${String(text || "").slice(0, 1500)}`);
+    try {
+      await sendToDdalkkakOffscreen({ type: "VALIDATE", text });
+      await appendLog(`[진단] JSON 형식 검사 통과 (${attempt}회차)`);
+      break;
+    } catch (error) {
+      formatError = error.message || "초안 JSON 구조를 확인하지 못했습니다.";
+      await appendLog(`[진단] JSON 형식 검사 실패 (${attempt}회차): ${formatError}`);
+      if (attempt === maxAttempts) {
+        throw new Error(`초안 JSON 형식이 올바르지 않아 총 ${maxAttempts}회 시도 후 중단했습니다. 기존 초안은 유지됩니다. ${formatError}`);
+      }
+    }
   }
+
+  const { draft } = await sendToDdalkkakOffscreen({ type: "PARSE", text });
+  return { title: draft.title, html: draft.html, summary: draft.summary, keyword };
 }
 
 async function generateArticleViaApi(keyword, references) {

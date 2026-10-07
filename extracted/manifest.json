@@ -31,6 +31,12 @@
     },
 
     {
+      "js": [ "chatgpt-content.js" ],
+      "matches": [ "https://chatgpt.com/*", "https://chat.openai.com/*" ],
+      "run_at": "document_idle"
+    },
+
+    {
       "matches": ["https://whereispost.com/morpheme/*"],
       "js": ["content_morpheme.js"],
       "run_at": "document_idle"
